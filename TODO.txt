@@ -1,0 +1,36 @@
+1. Split current stage into sub-stages:
+    - A sub-stage is a "phase" during which specific impulse, mass flow, and thrust remain the same.
+    ? https://space.stackexchange.com/a/25167
+    - This can be determined by sorting by the burn time of each engine group/booster.
+
+2. After each sub-stage, simulate the triggering of the player-made staging:
+    - If the resultant ∆V of the new rocket is better than the ∆V from continuing with the next sub-stage, then repeat from step 1 with the newly staged rocket.
+    * This is for determining when, for example, side boosters should be separated.
+    ! It may be better if I just pre-simulate each player stage to make this check more efficient.
+
+3. The stage's stats can then be determined from the sub-stages:
+    - Initial thrust = thrust of first sub-stage.
+    - Burn time = Sum of burn times of each sub-stage.
+    - ∆V = Sum of the ∆V of each sub-stage.
+    ? https://wiki.kerbalspaceprogram.com/wiki/Specific_impulse#Multiple_engines
+    * Each engine group can be "combined" into a single "engine", which can then be "combined" again for the ∆V calculation.
+
+
+TODO: Booster support.
+public class Booster
+{
+    public BoosterModule module;
+
+    public Vector2 ThrustVector
+    {
+        get
+        {
+            // ? From `BoosterModule.FixedUpdate()`.
+            Vector2 vector = module.thrustVector.Value * 9.8f;
+            if (Base.worldBase.AllowsCheats)
+                return module.transform.TransformVector(vector);
+            else
+                return module.transform.TransformVectorUnscaled(vector);
+        }
+    }
+}
