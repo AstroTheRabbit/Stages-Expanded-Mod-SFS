@@ -17,8 +17,7 @@
     </Reference>
 
     <!-- The following DLLs cause warnings on build -->
-    <Reference Remove="**/System.IO.Compression.dll"/>
-    <Reference Remove="**/System.Net.Http.dll"/>
+    <Reference Remove="**/System.*.dll"/>
     <Reference Remove="**/Firebase.*.dll"/>
     <Reference Remove="**/Unity.Compat.dll"/>
     <Reference Remove="**/Unity.Tasks.dll"/>

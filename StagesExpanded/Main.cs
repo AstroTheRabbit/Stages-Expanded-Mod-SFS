@@ -5,6 +5,8 @@ using ModLoader.Helpers;
 using UITools;
 using SFS.IO;
 using System.Collections.Generic;
+using ModLoader.IO;
+using SFS.World;
 
 namespace StagesExpanded
 {
@@ -16,7 +18,7 @@ namespace StagesExpanded
         public override string Author => "Astro The Rabbit";
         public override string MinimumGameVersionNecessary => "1.5.10.2";
         public override string ModVersion => "1.0";
-        public override string Description => "Displays ∆V, TWR, and other stats for your rockets' stages.";
+        public override string Description => "Displays ∆V, burn time, and other stats for your rockets' stages.";
 
         public override Dictionary<string, string> Dependencies { get; } = new Dictionary<string, string> { { "UITools", "1.1.5" } };
         public Dictionary<string, FilePath> UpdatableFiles => new Dictionary<string, FilePath>() { { "https://github.com/AstroTheRabbit/Stages-Expanded-Mod-SFS/releases/latest/download/StagesExpanded.dll", new FolderPath(ModFolder).ExtendToFile("StagesExpanded.dll") } };
@@ -29,7 +31,20 @@ namespace StagesExpanded
 
         public override void Load()
         {
-            Debug.Log("Hiya!");
+            // ! TODO: Testing purposes only!
+            Console.commands.Add
+            (
+                input =>
+                {
+                    if (input != "calc")
+                        return false;
+
+                    Rocket rocket = PlayerController.main.player.Value as Rocket;
+                    RocketInfo info = RocketInfo.Generate(rocket);
+
+                    return true;
+                }
+            );
         }
     }
 }
