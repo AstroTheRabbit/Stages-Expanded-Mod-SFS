@@ -10,9 +10,9 @@ namespace StagesExpanded
     public class RocketInfo
     {
         /// The calculation results of the current rocket state.
-        public PhaseResult CurrentStageResult { get; } 
+        public PhaseResult CurrentStageResult { get; private set; } 
         /// Maps a `Stage` to its respective stage `PhaseResult`.
-        public Dictionary<Stage, PhaseResult> StageResults { get; }
+        public Dictionary<Stage, PhaseResult> StageResults { get; private set; }
 
         public static RocketInfo Generate(Rocket rocket)
         {
@@ -38,11 +38,12 @@ namespace StagesExpanded
                 .GetModules<EngineModule>()
                 .Where(em => em.engineOn.Value)
                 .Select(mapping.GetOrAddEngine)
-                .ForEach(ei => ei.EngineOn = true);
+                .ForEach(ei => ei.UpdateEngineOn());
 
             if (mapping.Engines.Count() == 0)
             {
                 // * The rocket has no active or staged engines, and so calculations cannot be performed.
+                Debug.Log("No engines active/staged!");
                 return null;
             }
 
@@ -52,31 +53,34 @@ namespace StagesExpanded
             List<PhaseResult> results = new List<PhaseResult>();
 
             // ! MAIN LOOP
-            int i = 0;
+            // int i = 0;
             do
             {
                 phase = phase.Step(mapping, out PhaseResult result);
                 results.Add(result);
 
-                Debug.Log($"Phase index: {i++}");
-                Debug.Log($"  ∆V: {result.DeltaV} m/s");
-                Debug.Log($"  Isp: {result.Isp} s");
-                Debug.Log($"  Burn time: {result.BurnTime} s");
-                Debug.Log($"  Initial mass: {result.IntialMass} kg");
-                Debug.Log($"  Final mass: {result.FinalMass} kg");
-                Debug.Log($"  Thrust: {result.Thrust}");
+                // Debug.Log($"Phase index: {i++}");
+                // Debug.Log($"  ∆V: {result.DeltaV} m/s");
+                // Debug.Log($"  Isp: {result.Isp} s");
+                // Debug.Log($"  Burn time: {result.BurnTime} s");
+                // Debug.Log($"  Initial mass: {result.IntialMass} kg");
+                // Debug.Log($"  Final mass: {result.FinalMass} kg");
+                // Debug.Log($"  Thrust: {result.Thrust}");
             } while (phase.MassFlow > 0.001);
 
             PhaseResult totalResult = PhaseResult.Merge(results, phase);
-            Debug.Log("Total phase results");
-            Debug.Log($"  ∆V: {totalResult.DeltaV} m/s");
-            Debug.Log($"  Isp: {totalResult.Isp} s");
-            Debug.Log($"  Burn time: {totalResult.BurnTime} s");
-            Debug.Log($"  Initial mass: {totalResult.IntialMass} kg");
-            Debug.Log($"  Final mass: {totalResult.FinalMass} kg");
-            Debug.Log($"  Thrust: {totalResult.Thrust}");
+            // Debug.Log("Total phase results");
+            // Debug.Log($"  ∆V: {totalResult.DeltaV} m/s");
+            // Debug.Log($"  Isp: {totalResult.Isp} s");
+            // Debug.Log($"  Burn time: {totalResult.BurnTime} s");
+            // Debug.Log($"  Initial mass: {totalResult.IntialMass} kg");
+            // Debug.Log($"  Final mass: {totalResult.FinalMass} kg");
+            // Debug.Log($"  Thrust: {totalResult.Thrust}");
 
-            return null;
+            return new RocketInfo()
+            {
+                CurrentStageResult = totalResult,
+            };
         }
 
         // TODO: Ensure first stage engines have their thrust altered by current throttle?

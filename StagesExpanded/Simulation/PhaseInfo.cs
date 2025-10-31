@@ -12,24 +12,10 @@ namespace StagesExpanded
     // ? https://space.stackexchange.com/a/25167
     public class PhaseInfo
     {
-        /// Generates a new `PhaseInfo` from the engines which are currently enabled.
-        public static PhaseInfo Generate(double totalMass, ModuleMapping mapping)
-        {
-            HashSet<EngineInfo> engines = mapping.Engines.Where(ei => ei.EngineOn).ToHashSet();
-            HashSet<ResourceInfo> resources = engines.SelectMany(ei => ei.Resources).ToHashSet();
-            return new PhaseInfo()
-            {
-                Engines = engines,
-                Resources = resources,
-                TotalMass = totalMass,
-            };
-        }
-
         private HashSet<EngineInfo> Engines { get; set; }
         private HashSet<ResourceInfo> Resources { get; set; }
         public double TotalMass { get; private set; }
-        public double WetMass => Resources.Select(ri => ri.WetMass).Sum();
-        public double DryMass => TotalMass - WetMass;
+        public double FinalMass => TotalMass - (MassFlow * BurnTime);
 
         /// The total thrust caused by this phase's engines.
         public Double2 Thrust => Engines.Select(ei => ei.Thrust).Sum();
@@ -38,19 +24,39 @@ namespace StagesExpanded
         /// The *effective* specific impulse of this phase's engines.
         // ? https://wiki.kerbalspaceprogram.com/wiki/Specific_impulse#Multiple_engines
         public double Isp => Thrust.magnitude / MassFlow;
-        /// The available ∆V of this phase.
-        // ? https://en.wikipedia.org/wiki/Tsiolkovsky_rocket_equation
-        public double DeltaV => 9.8 * Isp * Math.Log(TotalMass / DryMass);
         /// The minimum burn time before a resource used by this phase is depleted.
         public double BurnTime => Resources.Where(ri => !ri.Depleted).Min(ri => ri.BurnTime);
+        /// The available ∆V of this phase.
+        // ? https://en.wikipedia.org/wiki/Tsiolkovsky_rocket_equation
+        public double DeltaV => 9.8 * Isp * Math.Log(TotalMass / FinalMass);
+
+        /// Generates a new `PhaseInfo` from the engines which are currently enabled.
+        public static PhaseInfo Generate(double totalMass, ModuleMapping mapping)
+        {
+            HashSet<EngineInfo> engines = mapping.Engines.Where(ei => ei.EngineOn).ToHashSet();
+            HashSet<ResourceInfo> resources = engines.SelectMany(ei => ei.Resources).ToHashSet();
+            foreach (ResourceInfo ri in resources)
+            {
+                ri.UpdateMassFlow();
+            }
+            return new PhaseInfo()
+            {
+                Engines = engines,
+                Resources = resources,
+                TotalMass = totalMass,
+            };
+        }
 
         public PhaseInfo Step(ModuleMapping mapping, out PhaseResult result)
         {
-            Debug.Log($"Resource count: {Resources.Count}");
             result = PhaseResult.FromPhaseInfo(this);
-            foreach (ResourceInfo ri in Resources.Where(ri => !ri.Depleted))
+            foreach (ResourceInfo ri in Resources)
             {
                 ri.Step(result.BurnTime, mapping);
+            }
+            foreach (EngineInfo ei in Engines)
+            {
+                ei.UpdateEngineOn();
             }
             return Generate(result.FinalMass, mapping);
         }
@@ -71,17 +77,15 @@ namespace StagesExpanded
         public static PhaseResult FromPhaseInfo(PhaseInfo pi)
         {
             double thrust = pi.Thrust.magnitude;
-            double burnTime = pi.BurnTime;
-
             return new PhaseResult()
             {
                 Thrust = thrust,
                 Acceleration = thrust / pi.TotalMass,
-                BurnTime = burnTime,
+                BurnTime = pi.BurnTime,
                 Isp = pi.Isp,
                 DeltaV = pi.DeltaV,
                 IntialMass = pi.TotalMass,
-                FinalMass = pi.TotalMass - (burnTime * pi.MassFlow),
+                FinalMass = pi.FinalMass,
             };
 
             // double GetSpaceCenterGravity()

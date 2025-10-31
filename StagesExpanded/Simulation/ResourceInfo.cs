@@ -11,7 +11,7 @@ namespace StagesExpanded
         /// Set of engines using this `ResourceInfo`.
         public HashSet<EngineInfo> Engines { get; private set; }
         public double WetMass { get; private set; }
-        public double MassFlow => Engines.Where(ei => ei.EngineOn).Sum(ei => ei.MassFlowPerResource(this));
+        public double MassFlow { get; private set; }
         public double BurnTime => WetMass / MassFlow;
         public bool Depleted => double.IsNaN(BurnTime) || BurnTime < 0.001;
 
@@ -24,10 +24,10 @@ namespace StagesExpanded
         public void Step(double burnTime, ModuleMapping mapping)
         {
             WetMass -= MassFlow * burnTime;
-            // TODO: This might be incorrect/buggy for modded resource types without mass e.g. electricity.
             if (Depleted)
             {
                 WetMass = 0;
+                MassFlow = 0;
                 mapping.DepletedResources.Add(this);
                 foreach (EngineInfo ei in Engines)
                 {
@@ -35,6 +35,11 @@ namespace StagesExpanded
                 }
                 Engines.Clear();
             }
+        }
+
+        public void UpdateMassFlow()
+        {
+            MassFlow = Engines.Sum(ei => ei.MassFlowPerResource(this));
         }
     }
 }

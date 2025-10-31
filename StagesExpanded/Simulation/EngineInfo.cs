@@ -11,27 +11,15 @@ namespace StagesExpanded
     {
         /// The list of `ResourceInfo`s this engine is using.
         public HashSet<ResourceInfo> Resources { get; }
-        private bool engineOn = false;
         /// Determines whether or not the engine is currently running.
-        public bool EngineOn
-        {
-            get
-            {
-                Debug.Log($"engine with thrust of {Thrust.magnitude / 9.8} has {Resources.Count} sources available");
-                return engineOn &= Resources.Count > 0;
-            }
-            set
-            {
-                engineOn = value;
-            }
-        }
+        public bool EngineOn { get; private set; }
         /// The thrust vector of the engine.
         public Double2 Thrust { get; }
         /// The mass flow of the engine.
         public double MassFlow { get; }
         /// The mass flow of the engine for a specific `ResourceInfo`.
-        // ? `FlowModule.Flow.FlowNegative()`
-        // ? https://www.desmos.com/calculator/4frnkcpwyh
+        /// ? `FlowModule.Flow.FlowNegative()`
+        /// ? https://www.desmos.com/calculator/4frnkcpwyh
         public double MassFlowPerResource(ResourceInfo ri) => MassFlow * ri.WetMass / Resources.Sum(r => r.WetMass);
 
         public EngineInfo(EngineModule engine, ModuleMapping mapping)
@@ -64,19 +52,27 @@ namespace StagesExpanded
             }
         }
 
+        public void UpdateEngineOn()
+        {
+            EngineOn = Resources.Any(ri => ri.WetMass > 0);
+            if (!EngineOn)
+            {
+                foreach (ResourceInfo ri in Resources)
+                {
+                    ri.Engines.Remove(this);
+                }
+                Resources.Clear();
+            }
+        }
+
         private static Double2 GetThrust(EngineModule em)
         {
             // ? Slight modification of `EngineModule.FixedUpdate()`.
-            Vector2 vector = em.thrustNormal.Value * em.thrust.Value * 9.8f;
+            Vector2 vector = em.thrustNormal.Value * em.thrust.Value;
             if (Base.worldBase.AllowsCheats)
                 return em.transform.TransformVector(vector).ToDouble2();
             else
                 return (Double2) em.transform.TransformVectorUnscaled(vector);
-        }
-
-        private static double GetISP(EngineModule em)
-        {
-            return (double) em.ISP.Value * Base.worldBase.settings.difficulty.IspMultiplier;
         }
 
         private static double GetMassFlow(EngineModule em)
@@ -86,8 +82,9 @@ namespace StagesExpanded
             // * but it's actually a bug with the way SFS calculates mass flow!
             // TODO: This needs to be tested properly, since I'm still not sure if the mass flow of the ∆V calculation
             // TODO: should always be thrust / isp, or if it should use the *actual* mass flow equation used in-game.
-            double thrust = 9.8 * em.thrust.Value * em.transform.TransformVector(em.thrustNormal.Value).magnitude;
-            return thrust / GetISP(em);
+            double thrust = em.thrust.Value * em.transform.TransformVector(em.thrustNormal.Value).magnitude;
+            double isp = (double) em.ISP.Value * Base.worldBase.settings.difficulty.IspMultiplier;
+            return thrust / isp;
         }
     }
 }
