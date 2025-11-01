@@ -21,14 +21,13 @@ namespace StagesExpanded
             WetMass = rm.ResourceAmount * rm.resourceType.resourceMass;
         }
 
-        public void Step(double burnTime, ModuleMapping mapping)
+        public void Step(double burnTime)
         {
             WetMass -= MassFlow * burnTime;
             if (Depleted)
             {
                 WetMass = 0;
-                MassFlow = 0;
-                mapping.DepletedResources.Add(this);
+                // MassFlow = 0;
                 foreach (EngineInfo ei in Engines)
                 {
                     ei.Resources.Remove(this);
@@ -39,7 +38,7 @@ namespace StagesExpanded
 
         public void UpdateMassFlow()
         {
-            MassFlow = Engines.Sum(ei => ei.MassFlowPerResource(this));
+            MassFlow = Engines.Where(ei => ei.EngineOn).Sum(ei => ei.MassFlowPerResource(this));
         }
     }
 }

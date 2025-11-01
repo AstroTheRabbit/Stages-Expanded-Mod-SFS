@@ -1,13 +1,11 @@
-﻿using HarmonyLib;
-using UnityEngine;
+﻿using System.Collections.Generic;
+using HarmonyLib;
 using ModLoader;
 using ModLoader.Helpers;
 using UITools;
 using SFS.IO;
-using System.Collections.Generic;
-using ModLoader.IO;
 using SFS.World;
-using SFS.UI.ModGUI;
+using ModLoader.IO;
 
 namespace StagesExpanded
 {
@@ -42,56 +40,19 @@ namespace StagesExpanded
 
                     Rocket rocket = PlayerController.main.player.Value as Rocket;
                     RocketInfo info = RocketInfo.Generate(rocket);
+                    
+                    Console.main.WriteText("Current Stage:");
+                    info.CurrentStageResult.DebugLog();
+                    foreach (Stage stage in rocket.staging.stages)
+                    {
+                        PhaseResult result = info.StageResults[stage];
+                        Console.main.WriteText($"Stage {stage.stageId}:");
+                        result.DebugLog();
+                    }
 
                     return true;
                 }
             );
-            SceneHelper.OnWorldSceneLoaded += TestUpdater.Create;
-        }
-
-        class TestUpdater : MonoBehaviour
-        {
-            Label label_deltaV;
-            Label label_isp;
-            Label label_burnTime;
-            Label label_initialMass;
-            Label label_finalMass;
-            Label label_thrust;
-
-            int counter = 0;
-
-            public static void Create()
-            {
-                int id = Builder.GetRandomID();
-                GameObject holder = Builder.CreateHolder(Builder.SceneToAttach.CurrentScene, "test");
-                Window window = Builder.CreateWindow(holder.transform, id, 500, 500, draggable: true, savePosition: false, titleText: "∆V Test");
-                window.CreateLayoutGroup(Type.Vertical, TextAnchor.MiddleLeft);
-                holder.AddComponent<TestUpdater>().Init(window);
-            }
-
-            void Init(Window window)
-            {
-                label_deltaV = Builder.CreateLabel(window, 450, 40);
-                label_isp = Builder.CreateLabel(window, 450, 40);
-                label_burnTime = Builder.CreateLabel(window, 450, 40);
-                label_initialMass = Builder.CreateLabel(window, 450, 40);
-                label_finalMass = Builder.CreateLabel(window, 450, 40);
-                label_thrust = Builder.CreateLabel(window, 450, 40);
-            }
-
-            void Update()
-            {
-                if (counter++ > 30 && PlayerController.main.player.Value is Rocket rocket && RocketInfo.Generate(rocket) is RocketInfo ri)
-                {
-                    counter = 0;
-                    label_deltaV.Text = "∆V: " + ri.CurrentStageResult.DeltaV.ToVelocityString();
-                    label_isp.Text = "Isp: " + ri.CurrentStageResult.Isp + "s";
-                    label_burnTime.Text = "Burn Time: " + ri.CurrentStageResult.BurnTime + "s";
-                    label_initialMass.Text = "Initial Mass: " + ri.CurrentStageResult.IntialMass.ToString();
-                    label_finalMass.Text = "Final Mass: " + ri.CurrentStageResult.FinalMass.ToString();
-                    label_thrust.Text = "Thrust: " + ri.CurrentStageResult.Thrust.ToString();
-                }
-            }
         }
     }
 }

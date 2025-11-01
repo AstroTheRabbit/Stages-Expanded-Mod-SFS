@@ -29,6 +29,34 @@ namespace StagesExpanded
             }
         }
 
+        // public static bool TryDequeue<T>(this Queue<T> queue, out T item)
+        // {
+        //     if (queue.Count > 0)
+        //     {
+        //         item = queue.Dequeue();
+        //         return true;
+        //     }
+        //     else
+        //     {
+        //         item = default;
+        //         return false;
+        //     }
+        // }
+
+        public static bool TryPeek<T>(this Queue<T> queue, out T item)
+        {
+            if (queue.Count > 0)
+            {
+                item = queue.Peek();
+                return true;
+            }
+            else
+            {
+                item = default;
+                return false;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Double2 ToDouble2(this Vector3 v)
         {

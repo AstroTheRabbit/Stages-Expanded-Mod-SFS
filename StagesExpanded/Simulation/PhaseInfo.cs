@@ -1,9 +1,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using SFS;
-using SFS.World;
-using SFS.WorldBase;
 using UnityEngine;
 
 namespace StagesExpanded
@@ -25,14 +22,20 @@ namespace StagesExpanded
         // ? https://wiki.kerbalspaceprogram.com/wiki/Specific_impulse#Multiple_engines
         public double Isp => Thrust.magnitude / MassFlow;
         /// The minimum burn time before a resource used by this phase is depleted.
-        public double BurnTime => Resources.Where(ri => !ri.Depleted).Min(ri => ri.BurnTime);
+        public double BurnTime => Depleted ? 0 : Resources.Min(ri => ri.BurnTime);
         /// The available ∆V of this phase.
         // ? https://en.wikipedia.org/wiki/Tsiolkovsky_rocket_equation
         public double DeltaV => 9.8 * Isp * Math.Log(TotalMass / FinalMass);
+        /// Returns `true` if all the resources used by this phase have been depleted.
+        public bool Depleted => Resources.All(ri => ri.Depleted);
 
         /// Generates a new `PhaseInfo` from the engines which are currently enabled.
         public static PhaseInfo Generate(double totalMass, ModuleMapping mapping)
         {
+            foreach (EngineInfo ei in mapping.Engines)
+            {
+                ei.UpdateEngineOn();
+            }
             HashSet<EngineInfo> engines = mapping.Engines.Where(ei => ei.EngineOn).ToHashSet();
             HashSet<ResourceInfo> resources = engines.SelectMany(ei => ei.Resources).ToHashSet();
             foreach (ResourceInfo ri in resources)
@@ -52,13 +55,49 @@ namespace StagesExpanded
             result = PhaseResult.FromPhaseInfo(this);
             foreach (ResourceInfo ri in Resources)
             {
-                ri.Step(result.BurnTime, mapping);
-            }
-            foreach (EngineInfo ei in Engines)
-            {
-                ei.UpdateEngineOn();
+                ri.Step(result.BurnTime);
             }
             return Generate(result.FinalMass, mapping);
+        }
+
+        public bool ShouldApplyStage(StageInfo stage)
+        {
+            // * If the phase is not using any of the resources that are removed by this stage, and there are no running engines
+            // * that are removed by this stage, then it is safe to assume that the player will activate this stage.
+
+            if (stage.IsCosmetic && !Depleted)
+                return false;
+            else if (stage.RemovedResources.Any(ri => Resources.Contains(ri)))
+                return false;
+            else if (stage.RemovedEngines.Any(ei => Engines.Contains(ei)))
+                return false;
+            else
+                return true;
+        }
+
+        public PhaseInfo ApplyStage(StageInfo stage, ModuleMapping mapping, out PhaseResult result)
+        {
+            double initialMass = TotalMass;
+            double finalMass = TotalMass - stage.RemovedMass;
+            result = PhaseResult.EmptyResult(initialMass, finalMass);
+
+            foreach (ResourceInfo ri in stage.RemovedResources)
+            {
+                foreach (EngineInfo ei in ri.Engines)
+                {
+                    ei.Resources.Remove(ri);
+                }
+                ri.Engines.Clear();
+            }
+            foreach (EngineInfo ei in stage.ToggledEngines)
+            {
+                ei.ToggleEngine();
+            }
+            foreach (EngineInfo ei in stage.RemovedEngines)
+            {
+                ei.ShutdownEngine();
+            }
+            return Generate(finalMass, mapping);
         }
     }
 
@@ -71,8 +110,22 @@ namespace StagesExpanded
         public double BurnTime { get; private set; } = double.NaN;
         public double Isp { get; private set; } = double.NaN;
         public double DeltaV { get; private set; } = double.NaN;
-        public double IntialMass { get; private set; } = double.NaN;
+        public double InitialMass { get; private set; } = double.NaN;
         public double FinalMass { get; private set; } = double.NaN;
+
+        public static PhaseResult EmptyResult(double initialMass, double finalMass)
+        {
+            return new PhaseResult()
+            {
+                Thrust = 0,
+                Acceleration = 0,
+                BurnTime = 0,
+                Isp = 0,
+                DeltaV = 0,
+                InitialMass = initialMass,
+                FinalMass = finalMass,
+            };
+        }
 
         public static PhaseResult FromPhaseInfo(PhaseInfo pi)
         {
@@ -84,7 +137,7 @@ namespace StagesExpanded
                 BurnTime = pi.BurnTime,
                 Isp = pi.Isp,
                 DeltaV = pi.DeltaV,
-                IntialMass = pi.TotalMass,
+                InitialMass = pi.TotalMass,
                 FinalMass = pi.FinalMass,
             };
 
@@ -95,13 +148,14 @@ namespace StagesExpanded
             // }
         }
 
-        /// Combines the results of `phases` into a single stage `PhaseResult`.
-        public static PhaseResult Merge(List<PhaseResult> phases, PhaseInfo finalPhase)
+        /// Combines the results of `phases` into a single stage `PhaseResult`. Returns `null` if `phases` is empty.
+        public static PhaseResult Merge(IEnumerable<PhaseResult> phases)
         {
-            if (phases.Count == 0)
-                throw new Exception("PhaseResult.Merge(): `results` is empty!");
+            if (phases.Count() == 0)
+                return null;
             
-            PhaseResult first = phases[0];
+            PhaseResult first = phases.First();
+            PhaseResult last = phases.Last();
             return new PhaseResult()
             {
                 Thrust = first.Thrust,
@@ -109,9 +163,19 @@ namespace StagesExpanded
                 Isp = first.Isp,
                 BurnTime = phases.Sum(pr => pr.BurnTime),
                 DeltaV = phases.Sum(pr => pr.DeltaV),
-                IntialMass = first.IntialMass,
-                FinalMass = finalPhase.TotalMass,
+                InitialMass = first.InitialMass,
+                FinalMass = last.FinalMass,
             };
+        }
+
+        internal void DebugLog()
+        {
+            ModLoader.IO.Console.main.WriteText($"\t∆V: {DeltaV} m/s");
+            ModLoader.IO.Console.main.WriteText($"\tIsp: {Isp} s");
+            ModLoader.IO.Console.main.WriteText($"\tBurn Time: {BurnTime} s");
+            ModLoader.IO.Console.main.WriteText($"\tThrust: {Thrust} t");
+            ModLoader.IO.Console.main.WriteText($"\tInitial Mass: {InitialMass} t");
+            ModLoader.IO.Console.main.WriteText($"\tFinal Mass: {FinalMass} t");
         }
     }
 }

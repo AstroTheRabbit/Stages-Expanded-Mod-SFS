@@ -10,15 +10,29 @@ namespace StagesExpanded
     public class RocketInfo
     {
         /// The calculation results of the current rocket state.
-        public PhaseResult CurrentStageResult { get; private set; } 
+        public PhaseResult CurrentStageResult { get; } 
+        public PhaseResult TotalResults { get; }
         /// Maps a `Stage` to its respective stage `PhaseResult`.
-        public Dictionary<Stage, PhaseResult> StageResults { get; private set; }
+        public Dictionary<Stage, PhaseResult> StageResults { get; }
+
+        private RocketInfo(PhaseResult currentStageResult, Dictionary<Stage, PhaseResult> stageResults)
+        {
+            IEnumerable<PhaseResult> Enumerator()
+            {
+                yield return currentStageResult;
+                foreach (PhaseResult pr in stageResults.Values)
+                {
+                    yield return pr;
+                }
+            }
+            CurrentStageResult = currentStageResult;
+            StageResults = stageResults;
+            TotalResults = PhaseResult.Merge(Enumerator());
+        }
 
         public static RocketInfo Generate(Rocket rocket)
         {
             // * Set-up the module mapping (engines are added by the `StageInfo` constructor when needed).
-            // TODO: The resource map *could* be 'sparser', however it's probably quicker to add all resources
-            // TODO: to the map in case the player is using a global-flow engine like the ion engine.
             ModuleMapping mapping = new ModuleMapping();
             foreach (ResourceModule rm in rocket.partHolder.GetModules<ResourceModule>())
             {
@@ -26,11 +40,11 @@ namespace StagesExpanded
             }
 
             // * Generate staging info.
-            Dictionary<Stage, StageInfo> stages = new Dictionary<Stage, StageInfo>();
+            Dictionary<Stage, StageInfo> stageMap = new Dictionary<Stage, StageInfo>();
             JointGroup joints = rocket.jointsGroup.ShallowCopy();
             foreach (Stage stage in rocket.staging.stages)
             {
-                stages.Add(stage, StageInfo.Generate(stage, ref joints, mapping));
+                stageMap.Add(stage, StageInfo.Generate(stage, ref joints, mapping));
             }
             
             // * Initialize the simulation with the currently enabled engines.
@@ -40,50 +54,52 @@ namespace StagesExpanded
                 .Select(mapping.GetOrAddEngine)
                 .ForEach(ei => ei.UpdateEngineOn());
 
-            if (mapping.Engines.Count() == 0)
-            {
-                // * The rocket has no active or staged engines, and so calculations cannot be performed.
-                Debug.Log("No engines active/staged!");
-                return null;
-            }
-
-            // TODO: Skip calculating the 'current' stage stats if there are no currently enabled engines. 
+            Queue<Stage> stages = new Queue<Stage>(rocket.staging.stages);
+            Stage previousStage = null;
 
             PhaseInfo phase = PhaseInfo.Generate(rocket.mass.GetMass(), mapping);
-            List<PhaseResult> results = new List<PhaseResult>();
+            PhaseResult emptyResult = PhaseResult.EmptyResult(phase.TotalMass, phase.TotalMass);
+            List<PhaseResult> phaseResults = new List<PhaseResult>();
 
-            // ! MAIN LOOP
-            // int i = 0;
-            do
+            PhaseResult currentStageResult = PhaseResult.EmptyResult(phase.TotalMass, phase.TotalMass);
+            Dictionary<Stage, PhaseResult> stageResults = new Dictionary<Stage, PhaseResult>(stageMap.Count);
+
+            void AddResults()
+            {
+                PhaseResult result = PhaseResult.Merge(phaseResults) ?? emptyResult;                
+                phaseResults.Clear();
+                if (previousStage == null)
+                    currentStageResult = result;
+                else
+                    stageResults.Add(previousStage, result);
+            }
+
+            while (stages.TryPeek(out Stage currentStage))
+            {
+                StageInfo currentInfo = stageMap[currentStage];
+                if (phase.ShouldApplyStage(currentInfo))
+                {
+                    AddResults();
+                    previousStage = stages.Dequeue(); // `stages.Dequeue() == currentStage`
+                    phase = phase.ApplyStage(currentInfo, mapping, out emptyResult);
+                }
+                else
+                {
+                    phase = phase.Step(mapping, out PhaseResult result);
+                    phaseResults.Add(result);
+                }
+            }
+            while (!phase.Depleted)
             {
                 phase = phase.Step(mapping, out PhaseResult result);
-                results.Add(result);
+                phaseResults.Add(result);
+            }
+            AddResults();
 
-                // Debug.Log($"Phase index: {i++}");
-                // Debug.Log($"  ∆V: {result.DeltaV} m/s");
-                // Debug.Log($"  Isp: {result.Isp} s");
-                // Debug.Log($"  Burn time: {result.BurnTime} s");
-                // Debug.Log($"  Initial mass: {result.IntialMass} kg");
-                // Debug.Log($"  Final mass: {result.FinalMass} kg");
-                // Debug.Log($"  Thrust: {result.Thrust}");
-            } while (phase.MassFlow > 0.001);
-
-            PhaseResult totalResult = PhaseResult.Merge(results, phase);
-            // Debug.Log("Total phase results");
-            // Debug.Log($"  ∆V: {totalResult.DeltaV} m/s");
-            // Debug.Log($"  Isp: {totalResult.Isp} s");
-            // Debug.Log($"  Burn time: {totalResult.BurnTime} s");
-            // Debug.Log($"  Initial mass: {totalResult.IntialMass} kg");
-            // Debug.Log($"  Final mass: {totalResult.FinalMass} kg");
-            // Debug.Log($"  Thrust: {totalResult.Thrust}");
-
-            return new RocketInfo()
-            {
-                CurrentStageResult = totalResult,
-            };
+            return new RocketInfo(currentStageResult, stageResults);
         }
 
-        // TODO: Ensure first stage engines have their thrust altered by current throttle?
+        // TODO: Ensure first stage engines have their thrust altered by current throttle.
         // private static double GetThrottle(Rocket rocket)
         // {
         //     if (rocket.throttle.throttleOn && rocket.throttle.throttlePercent > 0)

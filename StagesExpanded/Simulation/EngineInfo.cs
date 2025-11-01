@@ -46,23 +46,30 @@ namespace StagesExpanded
                     }
                 }
             }
-            foreach (ResourceInfo ri in Resources)
-            {
-                ri.Engines.Add(this);
-            }
         }
 
         public void UpdateEngineOn()
         {
-            EngineOn = Resources.Any(ri => ri.WetMass > 0);
-            if (!EngineOn)
+            EngineOn &= Resources.Any(ri => ri.WetMass > 0);
+            foreach (ResourceInfo ri in Resources)
             {
-                foreach (ResourceInfo ri in Resources)
-                {
+                if (EngineOn)
+                    ri.Engines.Add(this);
+                else
                     ri.Engines.Remove(this);
-                }
-                Resources.Clear();
             }
+        }
+
+        public void ToggleEngine()
+        {
+            EngineOn = !EngineOn;
+            UpdateEngineOn();
+        }
+
+        public void ShutdownEngine()
+        {
+            EngineOn = false;
+            UpdateEngineOn();
         }
 
         private static Double2 GetThrust(EngineModule em)
@@ -80,8 +87,6 @@ namespace StagesExpanded
             // ? `EngineModule.RecalculateMassFlow()`.
             // * The differing (incorrect) calculation for thrust here may seem strange,
             // * but it's actually a bug with the way SFS calculates mass flow!
-            // TODO: This needs to be tested properly, since I'm still not sure if the mass flow of the ∆V calculation
-            // TODO: should always be thrust / isp, or if it should use the *actual* mass flow equation used in-game.
             double thrust = em.thrust.Value * em.transform.TransformVector(em.thrustNormal.Value).magnitude;
             double isp = (double) em.ISP.Value * Base.worldBase.settings.difficulty.IspMultiplier;
             return thrust / isp;

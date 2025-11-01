@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Collections.Generic;
+using UnityEngine;
 using SFS.World;
 using SFS.Parts;
 using SFS.Parts.Modules;
@@ -10,15 +11,21 @@ namespace StagesExpanded
     /// Contains info about how the rocket changes (resources, engines, etc) when a stage is triggered.
     public class StageInfo
     {
-        public double RemovedMass { get; private set; }
         public List<ResourceInfo> RemovedResources { get; private set; }
         public List<EngineInfo> RemovedEngines { get; private set; }
         public List<EngineInfo> ToggledEngines { get; private set; }
+        public double RemovedDryMass { get; private set; }
+        public double RemovedMass => RemovedDryMass + RemovedResources.Sum(ri => ri.WetMass);
+
+        /// A "cosmetic" stage is one which at most only removes mass (e.g. fairing separation or solar panel deployment).
+        /// These should only be applied once the current phase is fully depleted, so that the calculator doesn't accidentally
+        /// over-report the amount of ∆V available in case the player doesn't activate a cosmetic stage immediately.
+        public bool IsCosmetic => RemovedResources.Count == 0 && RemovedEngines.Count == 0 && ToggledEngines.Count == 0;
 
         public static StageInfo Generate(Stage stage, ref JointGroup joints, ModuleMapping mapping)
         {
             JointGroup jointGroup = joints;
-            double splitMass = 0;
+            Dictionary<Part, List<Part>> splitModuleJoints = new Dictionary<Part, List<Part>>();
             // * "Activate" detach & split modules.
             foreach (DetachModule dm in stage.parts.GetModules<DetachModule>())
             {
@@ -33,7 +40,8 @@ namespace StagesExpanded
                 // ? `SplitModule.Split()`
                 if (sm.fairing)
                 {
-                    foreach (SplitModule fairing in jointGroup.GetConnectedFairings(sm.FieldRef<Part>("part"), sm))
+                    var list = jointGroup.GetConnectedFairings(sm.FieldRef<Part>("part"), sm);
+                    foreach (SplitModule fairing in list)
                     {
                         Deploy(fairing);
                     }
@@ -47,25 +55,53 @@ namespace StagesExpanded
             void Deploy(SplitModule sm)
             {
                 // ? `SplitModule.Deploy()`
+                // TODO: Properly detecting whether or not the fragments of a `SplitModule` remain attached to the rocket
+                // TODO: without creating new parts and/or modifying the `Rocket` seems to be incredibly difficult.
+                // TODO: Currently I am just assuming that most players will use parts "as they are intended to be used",
+                // TODO: and that every non-fairing `SplitModule` has a fragment that stays connected to its adjoined parts.
                 Part part = sm.FieldRef<Part>("part");
-                jointGroup.RemovePartAndItsJoints(part);
-                // TODO: idk how to easily re-add the joints of the split module's fragments without directly creating parts.
-                // TODO: However for most 'normal' rockets this shouldn't mess with the calculations *too* much.
-                splitMass += part.mass.Value;
+                foreach (PartJoint joint in jointGroup.dictionary[part].ToArray())
+                {
+                    if (!sm.fairing)
+                    {
+                        Part other = joint.GetOtherPart(part);
+                        if (splitModuleJoints.TryGetValue(other, out List<Part> parts))
+                            parts.Add(part);
+                        else
+                            splitModuleJoints.Add(other, new List<Part>() { part });
+                    }
+                    jointGroup.RemoveJoint(joint);
+                }
             }
 
-            // * Recreate the joint group, calculate removed mass.
+            // * Recreate the joint group; calculate removed mass.
             jointGroup.RecreateGroups(out List<JointGroup> newGroups);
             newGroups.Sort(SortJointGroups);
             joints = newGroups[0];
             HashSet<Part> removedParts = newGroups.Skip(1).SelectMany(jg => jg.parts).ToHashSet();
 
-            double removedMass = removedParts.Sum(p => p.mass.Value) - splitMass;
+            double splitMass = 0;
+            HashSet<Part> connectedSplitParts = new HashSet<Part>();
+            foreach (KeyValuePair<Part, List<Part>> kvp in splitModuleJoints)
+            {
+                if (!removedParts.Contains(kvp.Key))
+                {
+                    foreach (Part splitPart in kvp.Value)
+                    {
+                        if (!connectedSplitParts.Contains(splitPart))
+                        {
+                            splitMass += splitPart.mass.Value;
+                            connectedSplitParts.Add(splitPart);
+                        }
+                    }
+                }
+            }
+
             List<EngineInfo> removedEngines = removedParts
                 .GetModules<EngineModule>()
                 .Select(mapping.GetOrAddEngine)
                 .ToList();
-            List<EngineInfo> activatedEngines = stage.parts
+            List<EngineInfo> toggledEngines = stage.parts
                 .Where(p => !removedParts.Contains(p))
                 .GetModules<EngineModule>()
                 .Select(mapping.GetOrAddEngine)
@@ -74,12 +110,13 @@ namespace StagesExpanded
                 .GetModules<ResourceModule>()
                 .Select(mapping.GetOrAddResource)
                 .ToList();
+            double removedDryMass = removedParts.Sum(p => p.mass.Value) - splitMass - removedResources.Sum(ri => ri.WetMass);
             return new StageInfo()
             {
-                RemovedMass = removedMass,
                 RemovedResources = removedResources,
                 RemovedEngines = removedEngines,
-                ToggledEngines = activatedEngines,
+                ToggledEngines = toggledEngines,
+                RemovedDryMass = removedDryMass,
             };
         }
 

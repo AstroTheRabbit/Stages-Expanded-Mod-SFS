@@ -10,7 +10,6 @@ namespace StagesExpanded
         private readonly Dictionary<EngineModule, EngineInfo> engines = new Dictionary<EngineModule, EngineInfo>();
         // TODO: `BoosterModule` support.
 
-        public HashSet<ResourceInfo> DepletedResources { get; } = new HashSet<ResourceInfo>();
         public IEnumerable<ResourceInfo> Resources => resources.Values;
         public IEnumerable<EngineInfo> Engines => engines.Values;
 
@@ -21,8 +20,6 @@ namespace StagesExpanded
             {
                 ri = new ResourceInfo(rm);
                 resources.Add(rm, ri);
-                // if (ri.WetMass < 0.001)
-                //     DepletedResources.Add(ri);
             }
             return ri;
         }
