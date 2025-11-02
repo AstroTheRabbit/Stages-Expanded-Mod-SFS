@@ -1,12 +1,11 @@
 using System.Linq;
 using System.Collections.Generic;
-using UnityEngine;
 using SFS.World;
 using SFS.Parts;
 using SFS.Parts.Modules;
 using StagesExpanded.Patches;
 
-namespace StagesExpanded
+namespace StagesExpanded.Simulation
 {
     /// Contains info about how the rocket changes (resources, engines, etc) when a stage is triggered.
     public class StageInfo
@@ -24,9 +23,9 @@ namespace StagesExpanded
 
         public static StageInfo Generate(Stage stage, ref JointGroup joints, ModuleMapping mapping)
         {
+            // * "Activate" detach & split modules.
             JointGroup jointGroup = joints;
             Dictionary<Part, List<Part>> splitModuleJoints = new Dictionary<Part, List<Part>>();
-            // * "Activate" detach & split modules.
             foreach (DetachModule dm in stage.parts.GetModules<DetachModule>())
             {
                 // ? `DetachModule.Detach()`
@@ -97,6 +96,10 @@ namespace StagesExpanded
                 }
             }
 
+            List<ResourceInfo> removedResources = removedParts
+                .GetModules<ResourceModule>()
+                .Select(mapping.GetOrAddResource)
+                .ToList();
             List<EngineInfo> removedEngines = removedParts
                 .GetModules<EngineModule>()
                 .Select(mapping.GetOrAddEngine)
@@ -105,10 +108,6 @@ namespace StagesExpanded
                 .Where(p => !removedParts.Contains(p))
                 .GetModules<EngineModule>()
                 .Select(mapping.GetOrAddEngine)
-                .ToList();
-            List<ResourceInfo> removedResources = removedParts
-                .GetModules<ResourceModule>()
-                .Select(mapping.GetOrAddResource)
                 .ToList();
             double removedDryMass = removedParts.Sum(p => p.mass.Value) - splitMass - removedResources.Sum(ri => ri.WetMass);
             return new StageInfo()

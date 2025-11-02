@@ -1,10 +1,8 @@
-using System;
 using System.Linq;
 using System.Collections.Generic;
 using SFS.Parts.Modules;
-using UnityEngine;
 
-namespace StagesExpanded
+namespace StagesExpanded.Simulation
 {
     public class ResourceInfo
     {

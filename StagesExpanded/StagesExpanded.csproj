@@ -3,6 +3,8 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net4.8</TargetFramework>
+    <!-- Disables the "null check can be simplified" recommendation -->
+    <NoWarn>IDE0270</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

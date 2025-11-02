@@ -1,11 +1,9 @@
 using System.Linq;
 using System.Collections.Generic;
-using UnityEngine;
 using SFS.World;
 using SFS.Parts.Modules;
-using System;
 
-namespace StagesExpanded
+namespace StagesExpanded.Simulation
 {
     public class RocketInfo
     {

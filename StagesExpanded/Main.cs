@@ -6,6 +6,7 @@ using UITools;
 using SFS.IO;
 using SFS.World;
 using ModLoader.IO;
+using StagesExpanded.Simulation;
 
 namespace StagesExpanded
 {
@@ -30,29 +31,8 @@ namespace StagesExpanded
 
         public override void Load()
         {
-            // ! TODO: Testing purposes only!
-            Console.commands.Add
-            (
-                input =>
-                {
-                    if (input != "calc")
-                        return false;
-
-                    Rocket rocket = PlayerController.main.player.Value as Rocket;
-                    RocketInfo info = RocketInfo.Generate(rocket);
-                    
-                    Console.main.WriteText("Current Stage:");
-                    info.CurrentStageResult.DebugLog();
-                    foreach (Stage stage in rocket.staging.stages)
-                    {
-                        PhaseResult result = info.StageResults[stage];
-                        Console.main.WriteText($"Stage {stage.stageId}:");
-                        result.DebugLog();
-                    }
-
-                    return true;
-                }
-            );
+            Settings.Init(ModFolder);
+            UI.Init();
         }
     }
 }

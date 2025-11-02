@@ -4,7 +4,7 @@ using UnityEngine;
 using SFS;
 using SFS.Parts.Modules;
 
-namespace StagesExpanded
+namespace StagesExpanded.Simulation
 {
     /// An engine, booster, etc used in the stats calculations.
     public class EngineInfo

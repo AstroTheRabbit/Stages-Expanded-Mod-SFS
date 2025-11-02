@@ -1,9 +1,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using UnityEngine;
 
-namespace StagesExpanded
+namespace StagesExpanded.Simulation
 {
     /// A "phase" is a segment of a stage during which thrust, specific impulse, and mass flow remain constant.
     // ? https://space.stackexchange.com/a/25167
@@ -98,84 +97,6 @@ namespace StagesExpanded
                 ei.ShutdownEngine();
             }
             return Generate(finalMass, mapping);
-        }
-    }
-
-    /// The result of `PhaseInfo` calculations.
-    public class PhaseResult
-    {
-        public double Thrust { get; private set; } = double.NaN;
-        public double Acceleration { get; private set; } = double.NaN;
-        public double GForce => Acceleration / 9.8;
-        public double BurnTime { get; private set; } = double.NaN;
-        public double Isp { get; private set; } = double.NaN;
-        public double DeltaV { get; private set; } = double.NaN;
-        public double InitialMass { get; private set; } = double.NaN;
-        public double FinalMass { get; private set; } = double.NaN;
-
-        public static PhaseResult EmptyResult(double initialMass, double finalMass)
-        {
-            return new PhaseResult()
-            {
-                Thrust = 0,
-                Acceleration = 0,
-                BurnTime = 0,
-                Isp = 0,
-                DeltaV = 0,
-                InitialMass = initialMass,
-                FinalMass = finalMass,
-            };
-        }
-
-        public static PhaseResult FromPhaseInfo(PhaseInfo pi)
-        {
-            double thrust = pi.Thrust.magnitude;
-            return new PhaseResult()
-            {
-                Thrust = thrust,
-                Acceleration = thrust / pi.TotalMass,
-                BurnTime = pi.BurnTime,
-                Isp = pi.Isp,
-                DeltaV = pi.DeltaV,
-                InitialMass = pi.TotalMass,
-                FinalMass = pi.FinalMass,
-            };
-
-            // double GetSpaceCenterGravity()
-            // {
-            //     SpaceCenterData spaceCenter = Base.planetLoader.spaceCenter;
-            //     return spaceCenter.address.GetPlanet().GetGravity(spaceCenter.LaunchPadLocation.position.magnitude);
-            // }
-        }
-
-        /// Combines the results of `phases` into a single stage `PhaseResult`. Returns `null` if `phases` is empty.
-        public static PhaseResult Merge(IEnumerable<PhaseResult> phases)
-        {
-            if (phases.Count() == 0)
-                return null;
-            
-            PhaseResult first = phases.First();
-            PhaseResult last = phases.Last();
-            return new PhaseResult()
-            {
-                Thrust = first.Thrust,
-                Acceleration = first.Acceleration,
-                Isp = first.Isp,
-                BurnTime = phases.Sum(pr => pr.BurnTime),
-                DeltaV = phases.Sum(pr => pr.DeltaV),
-                InitialMass = first.InitialMass,
-                FinalMass = last.FinalMass,
-            };
-        }
-
-        internal void DebugLog()
-        {
-            ModLoader.IO.Console.main.WriteText($"\t∆V: {DeltaV} m/s");
-            ModLoader.IO.Console.main.WriteText($"\tIsp: {Isp} s");
-            ModLoader.IO.Console.main.WriteText($"\tBurn Time: {BurnTime} s");
-            ModLoader.IO.Console.main.WriteText($"\tThrust: {Thrust} t");
-            ModLoader.IO.Console.main.WriteText($"\tInitial Mass: {InitialMass} t");
-            ModLoader.IO.Console.main.WriteText($"\tFinal Mass: {FinalMass} t");
         }
     }
 }

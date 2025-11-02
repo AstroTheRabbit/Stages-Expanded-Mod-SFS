@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using SFS.Parts.Modules;
 
-namespace StagesExpanded
+namespace StagesExpanded.Simulation
 {
     /// Maps vanilla part modules (resources, engines, etc) to their simulation equivalents.
     public class ModuleMapping
