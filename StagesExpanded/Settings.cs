@@ -40,14 +40,8 @@ namespace StagesExpanded
         {
             Box box = Builder.CreateBox(parent, size.x, size.y);
             box.CreateLayoutGroup(LayoutType.Vertical, TextAnchor.UpperLeft, padding: new RectOffset(15, 15, 15, 15));
-            
-            void OnSettingChanged()
-            {
-                UI.DestroyUI();
-                UI.CreateUI();
-            }
 
-            foreach ((string name, MemberRef<bool> setting) in settings.ReadoutSettings(OnSettingChanged))
+            foreach ((string name, MemberRef<bool> setting) in settings.ReadoutSettings(UI.CreateUI))
             {
                 Builder.CreateToggleWithLabel
                 (
@@ -73,7 +67,11 @@ namespace StagesExpanded
     {
         public int WindowWidth { get; set; } = 320;
         public int WindowHeight { get; set; } = 600;
+        /// Should the window start minimized?
         public bool WindowMinimized { get; set; } = false;
+
+        /// How often the simulation run, in milliseconds.
+        public int SimulationFrequency { get; set; } = 100;
 
         public bool ShowReadout_DeltaV { get; set; } = true;
         public bool ShowReadout_BurnTime { get; set; } = true;

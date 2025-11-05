@@ -29,10 +29,12 @@ namespace StagesExpanded
         {
             SceneHelper.OnWorldSceneLoaded += CreateUI;
             SceneHelper.OnWorldSceneUnloaded += DestroyUI;
+            SimulationManager.OnResultChanged += UpdateUI;
         }
 
         public static void CreateUI()
         {
+            DestroyUI();
             if (Settings.settings.ActiveReadoutCount() == 0)
                 return;
             
@@ -51,32 +53,40 @@ namespace StagesExpanded
             window.EnableScrolling(LayoutType.Vertical);
             window.RegisterPermanentSaving(Main.main.ModNameID);
 
-            // ! TESTING ONLY
-            PlayerController.main.player.OnChange += UpdateUI;
-
             window.Minimized = Settings.settings.WindowMinimized;
             window.OnMinimizedChangedEvent += () => Settings.settings.WindowMinimized = window.Minimized;
         }
 
-        static void UpdateUI(Player player)
+        static void UpdateUI(Rocket rocket, RocketInfo info)
         {
-            if (player is Rocket rocket)
-            {
-                RocketInfo info = RocketInfo.Generate(rocket);
-                // ! TESTING ONLY
-                currentStageReadout?.Destroy();
-                foreach (StageReadout readout in stageReadouts.Values)
-                {
-                    readout?.Destroy();
-                }
-                stageReadouts.Clear();
+            if (holder == null)
+                return;
 
-                currentStageReadout = new StageReadout("Current Stage", info.CurrentStageResult, window);
-                foreach (Stage stage in rocket.staging.stages)
-                {
-                    StageReadout readout = new StageReadout($"Stage {stage.stageId}", info.StageResults[stage], window);
-                    stageReadouts.Add(stage.stageId, readout);
-                }
+            // ! TESTING ONLY
+            // TODO: Need to optimize the updating of the inner windows (I'm currently just destroying and re-creating them).
+            // TODO: Also need to make the minimized state of the inner windows persistent.
+            currentStageReadout?.Destroy();
+            foreach (StageReadout readout in stageReadouts.Values)
+            {
+                readout?.Destroy();
+            }
+            stageReadouts.Clear();
+
+            if (info == null)
+            {
+                window.Active = false;
+                return;
+            }
+            window.Active = true;
+
+            if (window.Minimized)
+                return;
+
+            currentStageReadout = new StageReadout("Current Stage", info.CurrentStageResult, window);
+            foreach (Stage stage in rocket.staging.stages)
+            {
+                StageReadout readout = new StageReadout($"Stage {stage.stageId}", info.StageResults[stage], window);
+                stageReadouts.Add(stage.stageId, readout);
             }
         }
 
@@ -124,9 +134,8 @@ namespace StagesExpanded
             // * Corrects the positions of the inner windows if this inner window is minimized or maximized.
             window.OnMinimizedChangedEvent += () =>
             {
-                holder.ChildrenHolder.GetComponent<VerticalLayoutGroup>().SetLayoutVertical();
-                // TODO: holder's scrolling bounds should shrink when an inner window is minimized, but they don't.
-                LayoutRebuilder.ForceRebuildLayoutImmediate(holder.ChildrenHolder.Rect());
+                // holder.ChildrenHolder.GetComponent<VerticalLayoutGroup>().SetLayoutVertical();
+                LayoutRebuilder.MarkLayoutForRebuild(holder.ChildrenHolder.Rect());
                 holder.ChildrenHolder.GetComponent<ScrollElement>().Move(Vector2.zero);
             };
             window.CreateLayoutGroup

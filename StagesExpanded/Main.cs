@@ -33,6 +33,7 @@ namespace StagesExpanded
         {
             Settings.Init(ModFolder);
             UI.Init();
+            SimulationManager.Init();
         }
     }
 }
