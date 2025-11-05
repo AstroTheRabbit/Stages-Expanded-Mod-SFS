@@ -100,7 +100,7 @@ namespace StagesExpanded
         private Label label_InitialMass = null;
         private Label label_FinalMass = null;
 
-        public StageReadout(string stage, PhaseResult result, Transform holder)
+        public StageReadout(string stage, PhaseResult result, Window holder)
         {
             int label_spacing = 5;
             int window_padding = 5;
@@ -122,7 +122,13 @@ namespace StagesExpanded
             // * Stops the inner window from "intercepting" scroll inputs which should be going to the main outer window.
             Object.Destroy(window.rectTransform.GetComponent<ButtonPC>());
             // * Corrects the positions of the inner windows if this inner window is minimized or maximized.
-            window.OnMinimizedChangedEvent += () => holder.GetComponent<VerticalLayoutGroup>().SetLayoutVertical();
+            window.OnMinimizedChangedEvent += () =>
+            {
+                holder.ChildrenHolder.GetComponent<VerticalLayoutGroup>().SetLayoutVertical();
+                // TODO: holder's scrolling bounds should shrink when an inner window is minimized, but they don't.
+                LayoutRebuilder.ForceRebuildLayoutImmediate(holder.ChildrenHolder.Rect());
+                holder.ChildrenHolder.GetComponent<ScrollElement>().Move(Vector2.zero);
+            };
             window.CreateLayoutGroup
             (
                 LayoutType.Vertical,

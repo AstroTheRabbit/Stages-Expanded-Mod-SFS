@@ -77,9 +77,9 @@ namespace StagesExpanded
 
         public bool ShowReadout_DeltaV { get; set; } = true;
         public bool ShowReadout_BurnTime { get; set; } = true;
-        public bool ShowReadout_Thrust { get; set; } = true; // ! false;
+        public bool ShowReadout_Thrust { get; set; } = false;
         public bool ShowReadout_Acceleration { get; set; } = true;
-        public bool ShowReadout_GForce { get; set; } = true; // ! false;
+        public bool ShowReadout_GForce { get; set; } = false;
         public bool ShowReadout_Isp { get; set; } = true;
         public bool ShowReadout_InitialMass { get; set; } = true;
         public bool ShowReadout_FinalMass { get; set; } = true;
