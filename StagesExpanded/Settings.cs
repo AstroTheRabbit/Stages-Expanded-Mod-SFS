@@ -5,6 +5,7 @@ using UnityEngine;
 using UITools;
 using SFS.IO;
 using SFS.UI.ModGUI;
+using StagesExpanded.UI;
 using LayoutType = SFS.UI.ModGUI.Type;
 using static StagesExpanded.ReadoutNames;
 
@@ -41,7 +42,7 @@ namespace StagesExpanded
             Box box = Builder.CreateBox(parent, size.x, size.y);
             box.CreateLayoutGroup(LayoutType.Vertical, TextAnchor.UpperLeft, padding: new RectOffset(15, 15, 15, 15));
 
-            foreach ((string name, MemberRef<bool> setting) in settings.ReadoutSettings(UI.CreateUI))
+            foreach ((string name, MemberRef<bool> setting) in settings.ReadoutSettings(WindowUI.CreateUI))
             {
                 Builder.CreateToggleWithLabel
                 (

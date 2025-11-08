@@ -8,13 +8,11 @@ namespace StagesExpanded.Simulation
 {
     public static class SimulationManager
     {
+        private static Rocket rocket = null;
         private static Thread simulationThread = null;
         private static bool simulationRunning = false;
         private static readonly object simulationLock = new object();
-        private static SynchronizationContext unityContext;
-
-        private static Rocket rocket;
-        private static RocketInfo result;
+        private static SynchronizationContext unityContext = null;
 
         public static event Action<Rocket, RocketInfo> OnResultChanged;
 
@@ -38,10 +36,11 @@ namespace StagesExpanded.Simulation
         {
             lock (simulationLock)
             {
+                // TODO: Should instead "ask" the simulation loop to skip its current cooldown so the window isn't empty when switching rockets.
                 PostResultChanged
                 (
                     rocket = player as Rocket,
-                    result = null
+                    null
                 );
             }
         }
@@ -77,23 +76,23 @@ namespace StagesExpanded.Simulation
             {
                 try
                 {
-                    Rocket copy_rocket;
-                    lock (simulationLock)
-                    {
-                        copy_rocket = rocket;
-                    }
-
                     RocketInfo copy_result = null;
-                    if (copy_rocket != null && copy_rocket.hasControl)
+                    if (!SandboxSettings.main.settings.infiniteFuel)
                     {
-                        copy_result = RocketInfo.Generate(copy_rocket);
+                        Rocket copy_rocket;
+                        lock (simulationLock)
+                        {
+                            copy_rocket = rocket;
+                        }
+                        if (copy_rocket != null && copy_rocket.hasControl)
+                        {
+                            copy_result = RocketInfo.Generate(copy_rocket);
+                        }
                     }
-
                     lock (simulationLock)
                     {
-                        PostResultChanged(rocket, result = copy_result);
+                        PostResultChanged(rocket, copy_result);
                     }
-
                 }
                 catch (Exception e)
                 {

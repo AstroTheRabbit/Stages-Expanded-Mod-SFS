@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using static StagesExpanded.ReadoutNames;
+using ModLoader.IO;
 
 namespace StagesExpanded.Simulation
 {
@@ -81,6 +82,15 @@ namespace StagesExpanded.Simulation
             if (Settings.settings.ShowReadout_Isp         ) yield return (Name_Isp         , Isp         );
             if (Settings.settings.ShowReadout_InitialMass ) yield return (Name_InitialMass , InitialMass );
             if (Settings.settings.ShowReadout_FinalMass   ) yield return (Name_FinalMass   , FinalMass   );
+        }
+
+        public void DebugPrint(string phaseName)
+        {
+            Console.main.WriteText(phaseName + ":");
+            foreach ((string name, double result) in Results())
+            {
+                Console.main.WriteText($"  {name}: {result}");
+            }
         }
     }
 }

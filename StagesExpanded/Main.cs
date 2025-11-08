@@ -1,16 +1,17 @@
 ﻿using System.Collections.Generic;
 using HarmonyLib;
-using ModLoader;
-using ModLoader.Helpers;
 using UITools;
+using SFS.UI;
 using SFS.IO;
-using SFS.World;
-using ModLoader.IO;
+using ModLoader;
+using StagesExpanded.UI;
 using StagesExpanded.Simulation;
+using SFS.World;
+using UnityEngine;
 
 namespace StagesExpanded
 {
-    public class Main : Mod
+    public class Main : Mod// !, IUpdatable
     {
         public static Main main;
         public override string ModNameID => "stagesexpanded";
@@ -31,9 +32,59 @@ namespace StagesExpanded
 
         public override void Load()
         {
-            Settings.Init(ModFolder);
-            UI.Init();
-            SimulationManager.Init();
+            const string ID_DELTA_V_CALCULATOR = "DELTA_V_CALCULATOR";
+            string Text_Menu()
+            {
+                return "Stages Expanded completely replaces the functionality of Altaïr's ΔV calculator.\n"
+                     + "Stages Expanded will now disable ∆V calculator and re-launch the game.\n"
+                     + "You can also fully un-install ∆V calculator if you want.";
+            }
+            string Text_Continue()
+            {
+                return "Continue";
+            }
+
+            if (ModsSettings.main.settings.modsActive.TryGetValue(ID_DELTA_V_CALCULATOR, out bool active) && active)
+            {
+                ButtonBuilder button = ButtonBuilder.CreateButton(null, Text_Continue, Relaunch, SFS.Input.CloseMode.None);
+                MenuGenerator.ShowChoices(Text_Menu, button);
+            }
+            else
+            {
+                Settings.Init(ModFolder);
+                StatsUI.Init();
+                WindowUI.Init();
+                SimulationManager.Init();
+
+                // ! TESTING ONLY
+                ModLoader.IO.Console.commands.Add
+                (
+                    (string input) =>
+                    {
+                        if (input != "calc")
+                            return false;
+                        
+                        if (PlayerController.main.player.Value is Rocket rocket)
+                        {
+                            RocketInfo info = RocketInfo.Generate(rocket);
+                            info.CurrentStageResult.DebugPrint("Current Stage");
+                            foreach (Stage stage in rocket.staging.stages)
+                            {
+                                info.StageResults[stage].DebugPrint($"Stage {stage.stageId}");
+                            }
+                        }
+
+                        return true;
+                    }
+                );
+            }
+
+            void Relaunch()
+            {
+                ModsSettings.main.settings.modsActive[ID_DELTA_V_CALCULATOR] = false;
+                ModsSettings.main.SaveAll();
+                ApplicationUtility.Relaunch();
+            }
         }
     }
 }

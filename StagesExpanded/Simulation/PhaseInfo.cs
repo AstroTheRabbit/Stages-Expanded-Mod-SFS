@@ -52,9 +52,10 @@ namespace StagesExpanded.Simulation
         public PhaseInfo Step(ModuleMapping mapping, out PhaseResult result)
         {
             result = PhaseResult.FromPhaseInfo(this);
+            result.DebugPrint("DBG");
             foreach (ResourceInfo ri in Resources)
             {
-                ri.Step(result.BurnTime);
+                ri.Step(result.BurnTime, mapping);
             }
             return Generate(result.FinalMass, mapping);
         }

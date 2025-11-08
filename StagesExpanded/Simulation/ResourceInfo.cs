@@ -1,12 +1,13 @@
 using System.Linq;
 using System.Collections.Generic;
 using SFS.Parts.Modules;
+using ModLoader.IO;
 
 namespace StagesExpanded.Simulation
 {
     public class ResourceInfo
     {
-        /// Set of engines using this `ResourceInfo`.
+        /// Set of engines currently using this `ResourceInfo`.
         public HashSet<EngineInfo> Engines { get; private set; }
         public double WetMass { get; private set; }
         public double MassFlow { get; private set; }
@@ -19,14 +20,13 @@ namespace StagesExpanded.Simulation
             WetMass = rm.ResourceAmount * rm.resourceType.resourceMass;
         }
 
-        public void Step(double burnTime)
+        public void Step(double burnTime, ModuleMapping mapping)
         {
             WetMass -= MassFlow * burnTime;
             if (Depleted)
             {
                 WetMass = 0;
-                // MassFlow = 0;
-                foreach (EngineInfo ei in Engines)
+                foreach (EngineInfo ei in mapping.Engines)
                 {
                     ei.Resources.Remove(this);
                 }

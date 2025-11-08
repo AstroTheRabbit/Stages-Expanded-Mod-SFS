@@ -9,7 +9,7 @@ namespace StagesExpanded.Simulation
     /// An engine, booster, etc used in the stats calculations.
     public class EngineInfo
     {
-        /// The list of `ResourceInfo`s this engine is using.
+        /// The list of `ResourceInfo`s this engine is using/will use.
         public HashSet<ResourceInfo> Resources { get; }
         /// Determines whether or not the engine is currently running.
         public bool EngineOn { get; private set; }
@@ -63,13 +63,11 @@ namespace StagesExpanded.Simulation
         public void ToggleEngine()
         {
             EngineOn = !EngineOn;
-            UpdateEngineOn();
         }
 
         public void ShutdownEngine()
         {
             EngineOn = false;
-            UpdateEngineOn();
         }
 
         private static Double2 GetThrust(EngineModule em)

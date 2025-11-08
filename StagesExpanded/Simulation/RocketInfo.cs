@@ -78,7 +78,8 @@ namespace StagesExpanded.Simulation
                 if (phase.ShouldApplyStage(currentInfo))
                 {
                     AddResults();
-                    previousStage = stages.Dequeue(); // `stages.Dequeue() == currentStage`
+                    // * `stages.Dequeue() == currentStage`
+                    previousStage = stages.Dequeue();
                     phase = phase.ApplyStage(currentInfo, mapping, out emptyResult);
                 }
                 else

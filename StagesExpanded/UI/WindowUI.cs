@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UITools;
 using UnityEngine;
+using UnityEngine.UI;
 using SFS.UI;
 using SFS.World;
 using SFS.UI.ModGUI;
@@ -11,11 +12,10 @@ using StagesExpanded.Simulation;
 using Object = UnityEngine.Object;
 using LayoutType = SFS.UI.ModGUI.Type;
 using static StagesExpanded.ReadoutNames;
-using UnityEngine.UI;
 
-namespace StagesExpanded
+namespace StagesExpanded.UI
 {
-    public static class UI
+    public static class WindowUI
     {
         private static StageReadout currentStageReadout = null;
         /// Key is `Stage.stageId`.
@@ -134,7 +134,6 @@ namespace StagesExpanded
             // * Corrects the positions of the inner windows if this inner window is minimized or maximized.
             window.OnMinimizedChangedEvent += () =>
             {
-                // holder.ChildrenHolder.GetComponent<VerticalLayoutGroup>().SetLayoutVertical();
                 LayoutRebuilder.MarkLayoutForRebuild(holder.ChildrenHolder.Rect());
                 holder.ChildrenHolder.GetComponent<ScrollElement>().Move(Vector2.zero);
             };
