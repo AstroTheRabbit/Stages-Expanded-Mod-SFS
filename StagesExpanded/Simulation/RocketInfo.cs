@@ -50,7 +50,7 @@ namespace StagesExpanded.Simulation
                 .GetModules<EngineModule>()
                 .Where(em => em.engineOn.Value)
                 .Select(mapping.GetOrAddEngine)
-                .ForEach(ei => ei.UpdateEngineOn());
+                .ForEach(ei => ei.UpdateEngine());
 
             Queue<Stage> stages = new Queue<Stage>(rocket.staging.stages);
             Stage previousStage = null;

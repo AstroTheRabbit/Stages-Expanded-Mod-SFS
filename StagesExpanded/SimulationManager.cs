@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using ModLoader.Helpers;
+using SFS.Input;
 using SFS.World;
 using UnityEngine;
 
@@ -12,6 +13,7 @@ namespace StagesExpanded.Simulation
         private static Thread simulationThread = null;
         private static bool simulationRunning = false;
         private static readonly object simulationLock = new object();
+        private static readonly AutoResetEvent simulationResetEvent = new AutoResetEvent(false);
         private static SynchronizationContext unityContext = null;
 
         public static event Action<Rocket, RocketInfo> OnResultChanged;
@@ -36,13 +38,9 @@ namespace StagesExpanded.Simulation
         {
             lock (simulationLock)
             {
-                // TODO: Should instead "ask" the simulation loop to skip its current cooldown so the window isn't empty when switching rockets.
-                PostResultChanged
-                (
-                    rocket = player as Rocket,
-                    null
-                );
+                rocket = player as Rocket;
             }
+            simulationResetEvent.Set();
         }
 
         private static void StartThread()
@@ -61,6 +59,7 @@ namespace StagesExpanded.Simulation
         private static void StopThread()
         {
             simulationRunning = false;
+            simulationResetEvent.Set();
             simulationThread?.Join();
             simulationThread = null;
         }
@@ -74,6 +73,10 @@ namespace StagesExpanded.Simulation
         {
             while (simulationRunning)
             {
+                // * Don't run the simulation whilst in a menu that pauses the game.
+                if (ScreenManager.main.CurrentScreen.PauseWhileOpen)
+                    continue;
+                
                 try
                 {
                     RocketInfo copy_result = null;
@@ -98,7 +101,7 @@ namespace StagesExpanded.Simulation
                 {
                     Debug.LogError($"Stages Expanded - Simulation thread error: {e}");
                 }
-                Thread.Sleep(Settings.settings.SimulationFrequency);
+                simulationResetEvent.WaitOne(Settings.settings.SimulationFrequency);
             }
         }
     }

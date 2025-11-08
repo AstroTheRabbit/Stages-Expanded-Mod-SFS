@@ -19,7 +19,7 @@ namespace StagesExpanded.UI
     {
         private static StageReadout currentStageReadout = null;
         /// Key is `Stage.stageId`.
-        private static Dictionary<int, StageReadout> stageReadouts = new Dictionary<int, StageReadout>();
+        private static readonly Dictionary<int, StageReadout> stageReadouts = new Dictionary<int, StageReadout>();
 
         private static readonly int windowID = Builder.GetRandomID();
         private static GameObject holder;
@@ -100,15 +100,15 @@ namespace StagesExpanded.UI
 
     public class StageReadout
     {
-        private ClosableWindow window;
-        private Label label_DeltaV = null;
-        private Label label_BurnTime = null;
-        private Label label_Thrust = null;
-        private Label label_Acceleration = null;
-        private Label label_GForce = null;
-        private Label label_Isp = null;
-        private Label label_InitialMass = null;
-        private Label label_FinalMass = null;
+        private readonly ClosableWindow window;
+        private readonly Label label_DeltaV = null;
+        private readonly Label label_BurnTime = null;
+        private readonly Label label_Thrust = null;
+        private readonly Label label_Acceleration = null;
+        private readonly Label label_GForce = null;
+        private readonly Label label_Isp = null;
+        private readonly Label label_InitialMass = null;
+        private readonly Label label_FinalMass = null;
 
         public StageReadout(string stage, PhaseResult result, Window holder)
         {
@@ -168,7 +168,7 @@ namespace StagesExpanded.UI
 
         void CreateLabels(int width, int height)
         {
-            foreach ((string name, MemberRef<Label> labelRef) in Labels())
+            foreach ((_, MemberRef<Label> labelRef) in Labels())
             {
                 Label label = Builder.CreateLabel(window, width, height);
                 label.TextAlignment = TMPro.TextAlignmentOptions.TopLeft;

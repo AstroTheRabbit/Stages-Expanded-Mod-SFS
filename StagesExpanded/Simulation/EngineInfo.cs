@@ -12,7 +12,7 @@ namespace StagesExpanded.Simulation
         /// The list of `ResourceInfo`s this engine is using/will use.
         public HashSet<ResourceInfo> Resources { get; }
         /// Determines whether or not the engine is currently running.
-        public bool EngineOn { get; private set; }
+        public bool EngineOn { get; set; }
         /// The thrust vector of the engine.
         public Double2 Thrust { get; }
         /// The mass flow of the engine.
@@ -48,9 +48,10 @@ namespace StagesExpanded.Simulation
             }
         }
 
-        public void UpdateEngineOn()
+        public void UpdateEngine()
         {
-            EngineOn &= Resources.Any(ri => ri.WetMass > 0);
+            Resources.RemoveWhere(ri => ri.Depleted);
+            EngineOn &= Resources.Count > 0;
             foreach (ResourceInfo ri in Resources)
             {
                 if (EngineOn)
@@ -58,16 +59,6 @@ namespace StagesExpanded.Simulation
                 else
                     ri.Engines.Remove(this);
             }
-        }
-
-        public void ToggleEngine()
-        {
-            EngineOn = !EngineOn;
-        }
-
-        public void ShutdownEngine()
-        {
-            EngineOn = false;
         }
 
         private static Double2 GetThrust(EngineModule em)

@@ -33,7 +33,7 @@ namespace StagesExpanded.Simulation
         {
             foreach (EngineInfo ei in mapping.Engines)
             {
-                ei.UpdateEngineOn();
+                ei.UpdateEngine();
             }
             HashSet<EngineInfo> engines = mapping.Engines.Where(ei => ei.EngineOn).ToHashSet();
             HashSet<ResourceInfo> resources = engines.SelectMany(ei => ei.Resources).ToHashSet();
@@ -52,10 +52,9 @@ namespace StagesExpanded.Simulation
         public PhaseInfo Step(ModuleMapping mapping, out PhaseResult result)
         {
             result = PhaseResult.FromPhaseInfo(this);
-            result.DebugPrint("DBG");
             foreach (ResourceInfo ri in Resources)
             {
-                ri.Step(result.BurnTime, mapping);
+                ri.Step(result.BurnTime);
             }
             return Generate(result.FinalMass, mapping);
         }
@@ -83,19 +82,15 @@ namespace StagesExpanded.Simulation
 
             foreach (ResourceInfo ri in stage.RemovedResources)
             {
-                foreach (EngineInfo ei in ri.Engines)
-                {
-                    ei.Resources.Remove(ri);
-                }
                 ri.Engines.Clear();
             }
             foreach (EngineInfo ei in stage.ToggledEngines)
             {
-                ei.ToggleEngine();
+                ei.EngineOn = !ei.EngineOn;
             }
             foreach (EngineInfo ei in stage.RemovedEngines)
             {
-                ei.ShutdownEngine();
+                ei.EngineOn = false;
             }
             return Generate(finalMass, mapping);
         }

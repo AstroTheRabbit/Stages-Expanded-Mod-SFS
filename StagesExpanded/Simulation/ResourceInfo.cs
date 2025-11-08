@@ -20,17 +20,13 @@ namespace StagesExpanded.Simulation
             WetMass = rm.ResourceAmount * rm.resourceType.resourceMass;
         }
 
-        public void Step(double burnTime, ModuleMapping mapping)
+        public void Step(double burnTime)
         {
             WetMass -= MassFlow * burnTime;
             if (Depleted)
             {
+                // * This resource is removed from each engines' `Resources` hashset when the `EngineInfo.UpdateEngineOn` is called.
                 WetMass = 0;
-                foreach (EngineInfo ei in mapping.Engines)
-                {
-                    ei.Resources.Remove(this);
-                }
-                Engines.Clear();
             }
         }
 
