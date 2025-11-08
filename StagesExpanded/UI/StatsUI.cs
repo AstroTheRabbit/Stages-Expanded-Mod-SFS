@@ -9,7 +9,7 @@ namespace StagesExpanded.UI
 {
     public static class StatsUI
     {
-        private static TextAdapter text_stat = null;
+        private static TextAdapter stat_text = null;
 
         public static void Init()
         {
@@ -27,17 +27,19 @@ namespace StagesExpanded.UI
             stat = Object.Instantiate(stat, holder, true);
 
             stat.Find("Title").GetComponent<TextAdapter>().Text = "∆V";
-            text_stat = stat.Find("Text").GetComponent<TextAdapter>();
+            stat_text = stat.Find("Text").GetComponent<TextAdapter>();
+
+            // TODO: Make `stat` auto-scale to fit `stat_text` with fixed text size?
         }
 
         private static void UpdateUI(Rocket rocket, RocketInfo info)
         {
             if (info == null)
-                text_stat.Text = "-";
+                stat_text.Text = "-";
             else if (SandboxSettings.main.settings.infiniteFuel)
-                text_stat.Text = "∞" + Loc.main.Meter_Per_Second_Unit;
+                stat_text.Text = "∞" + Loc.main.Meter_Per_Second_Unit;
             else
-                text_stat.Text = info.TotalResults.DeltaV.ToVelocityString();
+                stat_text.Text = info.TotalResults.DeltaV.ToVelocityString();
         }
     }
 }

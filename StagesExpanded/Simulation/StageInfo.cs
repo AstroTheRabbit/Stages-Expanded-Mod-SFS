@@ -59,17 +59,20 @@ namespace StagesExpanded.Simulation
                 // TODO: Currently I am just assuming that most players will use parts "as they are intended to be used",
                 // TODO: and that every non-fairing `SplitModule` has a fragment that stays connected to its adjoined parts.
                 Part part = sm.FieldRef<Part>("part");
-                foreach (PartJoint joint in jointGroup.dictionary[part].ToArray())
+                if (jointGroup.dictionary.TryGetValue(part, out List<PartJoint> partJoints))
                 {
-                    if (!sm.fairing)
+                    foreach (PartJoint joint in partJoints.ToArray())
                     {
-                        Part other = joint.GetOtherPart(part);
-                        if (splitModuleJoints.TryGetValue(other, out List<Part> parts))
-                            parts.Add(part);
-                        else
-                            splitModuleJoints.Add(other, new List<Part>() { part });
+                        if (!sm.fairing)
+                        {
+                            Part other = joint.GetOtherPart(part);
+                            if (splitModuleJoints.TryGetValue(other, out List<Part> parts))
+                                parts.Add(part);
+                            else
+                                splitModuleJoints.Add(other, new List<Part>() { part });
+                        }
+                        jointGroup.RemoveJoint(joint);
                     }
-                    jointGroup.RemoveJoint(joint);
                 }
             }
 

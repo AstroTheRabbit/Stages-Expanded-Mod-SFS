@@ -70,13 +70,25 @@ namespace StagesExpanded
                 };
             }
 
+
             MemberRef<int> windowWidthRef = MemberRef<int>.FromProperty(settings, nameof(SettingsData.WindowWidth), WindowUI.CreateUI);
             MemberRef<int> windowHeightRef = MemberRef<int>.FromProperty(settings, nameof(SettingsData.WindowHeight), WindowUI.CreateUI);
             MemberRef<int> simulationFrequencyRef = MemberRef<int>.FromProperty(settings, nameof(SettingsData.SimulationFrequency));
+            MemberRef<bool> minimizeEmptyStagesRef = MemberRef<bool>.FromProperty(settings, nameof(SettingsData.MinimizeEmptyStages), WindowUI.CreateUI);
 
             CreateIntInput("Window Width", windowWidthRef);
-            CreateIntInput("Window Width", windowHeightRef);
+            CreateIntInput("Window Height", windowHeightRef);
             CreateIntInput("Simulation Frequency", simulationFrequencyRef);
+
+            Builder.CreateToggleWithLabel
+            (
+                box,
+                size.x - 30,
+                40,
+                () => minimizeEmptyStagesRef.Get(),
+                () => minimizeEmptyStagesRef.Set(!minimizeEmptyStagesRef.Get()),
+                labelText: "Minimize Empty Stages"
+            );
 
             return box.gameObject;
         }
@@ -113,11 +125,11 @@ namespace StagesExpanded
     {
         public int WindowWidth { get; set; } = 320;
         public int WindowHeight { get; set; } = 620;
-        /// Should the window start minimized?
         public bool WindowMinimized { get; set; } = false;
 
         /// How often the simulation run, in milliseconds.
         public int SimulationFrequency { get; set; } = 1000;
+        public bool MinimizeEmptyStages { get; set; } = false;
 
         public bool ShowReadout_DeltaV { get; set; } = true;
         public bool ShowReadout_BurnTime { get; set; } = true;

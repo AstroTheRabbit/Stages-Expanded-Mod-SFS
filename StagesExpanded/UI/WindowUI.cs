@@ -12,18 +12,21 @@ using StagesExpanded.Simulation;
 using Object = UnityEngine.Object;
 using LayoutType = SFS.UI.ModGUI.Type;
 using static StagesExpanded.ReadoutNames;
+using UnityEngine.SceneManagement;
 
 namespace StagesExpanded.UI
 {
     public static class WindowUI
     {
-        private static StageReadout currentStageReadout = null;
-        /// Key is `Stage.stageId`.
-        private static readonly Dictionary<int, StageReadout> stageReadouts = new Dictionary<int, StageReadout>();
-
         private static readonly int windowID = Builder.GetRandomID();
         private static GameObject holder;
         private static ClosableWindow window;
+        private static ScrollElement scroll;
+
+        private static Rocket previousRocket = null;
+        private static readonly Queue<StageUI> pool = new Queue<StageUI>();
+        private static readonly StageUI.State currentStageState = new StageUI.State();
+        private static readonly Dictionary<int, StageUI.State> stageStates = new Dictionary<int, StageUI.State>();
 
         public static void Init()
         {
@@ -35,7 +38,7 @@ namespace StagesExpanded.UI
         public static void CreateUI()
         {
             DestroyUI();
-            if (Settings.settings.ActiveReadoutCount() == 0)
+            if (Settings.settings.ActiveReadoutCount() == 0 || SceneManager.GetActiveScene().name != "World_PC")
                 return;
             
             holder = Builder.CreateHolder(Builder.SceneToAttach.CurrentScene, "Stages Expanded - Window Holder");
@@ -55,38 +58,51 @@ namespace StagesExpanded.UI
 
             window.Minimized = Settings.settings.WindowMinimized;
             window.OnMinimizedChangedEvent += () => Settings.settings.WindowMinimized = window.Minimized;
+            scroll = window.ChildrenHolder.GetComponent<ScrollElement>();
         }
 
         static void UpdateUI(Rocket rocket, RocketInfo info)
         {
-            if (holder == null)
+            if (window == null)
                 return;
 
-            // ! TESTING ONLY
-            // TODO: Need to optimize the updating of the inner windows (I'm currently just destroying and re-creating them).
-            // TODO: Also need to make the minimized state of the inner windows persistent.
-            currentStageReadout?.Destroy();
-            foreach (StageReadout readout in stageReadouts.Values)
-            {
-                readout?.Destroy();
-            }
-            stageReadouts.Clear();
-
-            if (info == null)
+            if (info == null || !rocket.hasControl)
             {
                 window.Active = false;
                 return;
             }
-            window.Active = true;
-
-            if (window.Minimized)
-                return;
-
-            currentStageReadout = new StageReadout("Current Stage", info.CurrentStageResult, window);
-            foreach (Stage stage in rocket.staging.stages)
+            else
             {
-                StageReadout readout = new StageReadout($"Stage {stage.stageId}", info.StageResults[stage], window);
-                stageReadouts.Add(stage.stageId, readout);
+                window.Active = true;
+            }
+
+            if (previousRocket != rocket)
+            {
+                ClearStates();
+                scroll.ResetPosition();
+                previousRocket = rocket;
+            }
+
+            int required = info.StageResults.Count + 1;
+            while (pool.Count > required)
+            {
+                pool.Dequeue().Destroy();
+            }
+            while (pool.Count < required)
+            {
+                pool.Enqueue(new StageUI(window, scroll));
+            }
+
+            pool.First().Update(currentStageState, info.CurrentStageResult);
+            foreach ((int id, PhaseResult result, StageUI ui) in pool.Skip(1).Zip(rocket.staging.stages, (u, s) => (s.stageId, info.StageResults[s], u)))
+            {
+                if (!stageStates.TryGetValue(id, out StageUI.State state))
+                {
+                    bool minimized = result.IsEmpty && Settings.settings.MinimizeEmptyStages;
+                    state = new StageUI.State(minimized);
+                    stageStates.Add(id, state);
+                }
+                ui.Update(state, result, id);
             }
         }
 
@@ -94,12 +110,27 @@ namespace StagesExpanded.UI
         {
             if (holder != null)
                 Object.Destroy(holder);
-            stageReadouts.Clear();
+            ClearStates();
+        }
+
+        static void ClearStates()
+        {
+            currentStageState.Minimized = false;
+            stageStates.Clear();
         }
     }
 
-    public class StageReadout
+    public class StageUI
     {
+        public class State
+        {
+            public bool Minimized { get; set; }
+            public State(bool minimized = false)
+            {
+                Minimized = minimized;
+            }
+        }
+
         private readonly ClosableWindow window;
         private readonly Label label_DeltaV = null;
         private readonly Label label_BurnTime = null;
@@ -109,8 +140,9 @@ namespace StagesExpanded.UI
         private readonly Label label_Isp = null;
         private readonly Label label_InitialMass = null;
         private readonly Label label_FinalMass = null;
+        private State currentState = null;
 
-        public StageReadout(string stage, PhaseResult result, Window holder)
+        public StageUI(Window holder, ScrollElement scroll)
         {
             int label_spacing = 5;
             int window_padding = 5;
@@ -126,17 +158,8 @@ namespace StagesExpanded.UI
                 window_width,
                 window_height,
                 draggable: false,
-                savePosition: false,
-                titleText: stage
+                savePosition: false
             );
-            // * Stops the inner window from "intercepting" scroll inputs which should be going to the main outer window.
-            Object.Destroy(window.rectTransform.GetComponent<ButtonPC>());
-            // * Corrects the positions of the inner windows if this inner window is minimized or maximized.
-            window.OnMinimizedChangedEvent += () =>
-            {
-                LayoutRebuilder.MarkLayoutForRebuild(holder.ChildrenHolder.Rect());
-                holder.ChildrenHolder.GetComponent<ScrollElement>().Move(Vector2.zero);
-            };
             window.CreateLayoutGroup
             (
                 LayoutType.Vertical,
@@ -144,14 +167,25 @@ namespace StagesExpanded.UI
                 5,
                 new RectOffset(window_padding, window_padding, window_padding, window_padding)
             );
-            CreateLabels(label_width, label_height);
-            UpdateLabels(result);
-        }
 
-        public void Destroy()
-        {
-            if (window != null)
-                Object.Destroy(window.gameObject);
+            // * Stops the inner window from "intercepting" scroll inputs which should be going to the main outer window.
+            Object.Destroy(window.rectTransform.GetComponent<ButtonPC>());
+            // * Corrects the positions of the inner windows if this inner window is minimized or maximized.
+            window.OnMinimizedChangedEvent += () =>
+            {
+                if (currentState != null)
+                    currentState.Minimized = window.Minimized;
+                LayoutRebuilder.MarkLayoutForRebuild(holder.ChildrenHolder.Rect());
+                scroll.Move(Vector2.zero);
+
+            };
+
+            foreach ((_, MemberRef<Label> labelRef) in Labels())
+            {
+                Label label = Builder.CreateLabel(window, label_width, label_height);
+                label.TextAlignment = TMPro.TextAlignmentOptions.TopLeft;
+                labelRef.Set(label);
+            }
         }
 
         IEnumerable<(string name, MemberRef<Label> label)> Labels()
@@ -166,18 +200,18 @@ namespace StagesExpanded.UI
             if (Settings.settings.ShowReadout_FinalMass   ) yield return (Name_FinalMass   , MemberRef<Label>.FromField(this, nameof(label_FinalMass   )));
         }
 
-        void CreateLabels(int width, int height)
+        public void Destroy()
         {
-            foreach ((_, MemberRef<Label> labelRef) in Labels())
-            {
-                Label label = Builder.CreateLabel(window, width, height);
-                label.TextAlignment = TMPro.TextAlignmentOptions.TopLeft;
-                labelRef.Set(label);
-            }
+            if (window != null)
+                Object.Destroy(window.gameObject);
         }
 
-        public void UpdateLabels(PhaseResult result)
+        public void Update(State state, PhaseResult result, int stageId = 0)
         {
+            if (window == null)
+                return;
+            
+            currentState = state;
             var iter = Enumerable.Zip
             (
                 Labels(),
@@ -193,6 +227,8 @@ namespace StagesExpanded.UI
             {
                 label.Text = value.ToReadoutString(name);
             }
+            window.Title = stageId == 0 ? "Current Stage" : $"Stage {stageId}";
+            window.Minimized = state.Minimized;
         }
     }
 }

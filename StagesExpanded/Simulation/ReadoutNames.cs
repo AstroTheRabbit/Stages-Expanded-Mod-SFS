@@ -22,7 +22,7 @@ namespace StagesExpanded
                 case Name_DeltaV:
                     return result + value.ToVelocityString();
                 case Name_BurnTime:
-                    return result + value.ToTimestampString(true, true);
+                    return result + value.ToBurnTimeString();
                 case Name_Thrust:
                     return result + value.ToMassString(1);
                 case Name_Acceleration:
@@ -38,6 +38,23 @@ namespace StagesExpanded
                 default:
                     throw new ArgumentException($"Stages Expanded - '{name}' is not a valid readout name!");
             }
+        }
+
+        static string ToBurnTimeString(this double value)
+        {
+            TimeSpan span = TimeSpan.FromSeconds(value);
+            string result = "";
+            if (span.Days > 0)
+                result += Loc.main.Day_Short.Inject(span.Days.ToString(), "value");
+            if (result != "" || span.Hours > 0)
+                result += Loc.main.Hour_Short.Inject(span.Hours.ToString(), "value");
+            if (result != "" || span.Minutes > 0)
+                result += Loc.main.Minute_Short.Inject(span.Minutes.ToString(), "value");
+            if (result == "" || span.TotalSeconds < 10)
+                result += Loc.main.Second_Short.Inject(span.TotalSeconds.ToString(1, true), "value");
+            else
+                result += Loc.main.Second_Short.Inject(span.Seconds.ToString(), "value");
+            return result;
         }
 
         static string ToMassString(this double value, int decimals)

@@ -26,7 +26,11 @@ namespace StagesExpanded.Simulation
         {
             Thrust = GetThrust(engine);
             MassFlow = GetMassFlow(engine);
-            EngineOn = engine.engineOn.Value;
+            if (EngineOn = engine.engineOn.Value)
+            {
+                Thrust *= mapping.Throttle;
+                MassFlow *= mapping.Throttle;
+            }
             Resources = new HashSet<ResourceInfo>();
 
             Stack<ResourceModule> stack = new Stack<ResourceModule>(engine.source.sources.SelectMany(s => s.sources));

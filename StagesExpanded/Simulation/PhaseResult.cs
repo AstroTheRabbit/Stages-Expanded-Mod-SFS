@@ -17,6 +17,8 @@ namespace StagesExpanded.Simulation
         public double InitialMass { get; private set; } = double.NaN;
         public double FinalMass { get; private set; } = double.NaN;
 
+        public bool IsEmpty => DeltaV < 0.001;
+
         public static PhaseResult EmptyResult(double initialMass, double finalMass)
         {
             return new PhaseResult()
@@ -44,12 +46,6 @@ namespace StagesExpanded.Simulation
                 InitialMass = pi.TotalMass,
                 FinalMass = pi.FinalMass,
             };
-
-            // double GetSpaceCenterGravity()
-            // {
-            //     SpaceCenterData spaceCenter = Base.planetLoader.spaceCenter;
-            //     return spaceCenter.address.GetPlanet().GetGravity(spaceCenter.LaunchPadLocation.position.magnitude);
-            // }
         }
 
         /// Combines the results of `phases` into a single stage `PhaseResult`. Returns `null` if `phases` is empty.

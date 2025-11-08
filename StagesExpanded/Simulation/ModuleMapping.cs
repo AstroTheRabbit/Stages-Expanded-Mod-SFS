@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using SFS.World;
 using SFS.Parts.Modules;
 
 namespace StagesExpanded.Simulation
@@ -10,6 +11,20 @@ namespace StagesExpanded.Simulation
         private readonly Dictionary<EngineModule, EngineInfo> engines = new Dictionary<EngineModule, EngineInfo>();
         // TODO: `BoosterModule` support.
 
+        public ModuleMapping(Rocket rocket)
+        {
+            if (rocket.throttle.throttlePercent.Value > 0.001)
+                Throttle = rocket.throttle.throttlePercent.Value;
+            else
+                Throttle = 1;
+            
+            foreach (ResourceModule rm in rocket.partHolder.GetModules<ResourceModule>())
+            {
+                GetOrAddResource(rm);
+            }
+        }
+
+        public double Throttle { get; }
         public IEnumerable<ResourceInfo> Resources => resources.Values;
         public IEnumerable<EngineInfo> Engines => engines.Values;
 

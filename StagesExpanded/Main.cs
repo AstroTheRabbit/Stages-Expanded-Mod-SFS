@@ -36,8 +36,8 @@ namespace StagesExpanded
             string Text_Menu()
             {
                 return "Stages Expanded completely replaces the functionality of Altaïr's ΔV calculator.\n"
-                     + "Stages Expanded will now disable ∆V calculator and re-launch the game.\n"
-                     + "You can also fully un-install ∆V calculator if you want.";
+                     + "Stages Expanded will now disable ∆V calculator and relaunch the game.\n"
+                     + "You can also fully uninstall ∆V calculator if you want.";
             }
             string Text_Continue()
             {

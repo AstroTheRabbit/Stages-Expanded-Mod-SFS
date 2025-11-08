@@ -30,12 +30,7 @@ namespace StagesExpanded.Simulation
 
         public static RocketInfo Generate(Rocket rocket)
         {
-            // * Set-up the module mapping (engines are added by the `StageInfo` constructor when needed).
-            ModuleMapping mapping = new ModuleMapping();
-            foreach (ResourceModule rm in rocket.partHolder.GetModules<ResourceModule>())
-            {
-                mapping.GetOrAddResource(rm);
-            }
+            ModuleMapping mapping = new ModuleMapping(rocket);
 
             // * Generate staging info.
             Dictionary<Stage, StageInfo> stageMap = new Dictionary<Stage, StageInfo>();
@@ -97,14 +92,5 @@ namespace StagesExpanded.Simulation
 
             return new RocketInfo(currentStageResult, stageResults);
         }
-
-        // TODO: Ensure first stage engines have their thrust altered by current throttle.
-        // private static double GetThrottle(Rocket rocket)
-        // {
-        //     if (rocket.throttle.throttleOn && rocket.throttle.throttlePercent > 0)
-        //         return rocket.throttle.throttlePercent.Value;
-        //     else
-        //         return 1;
-        // }
     }
 }
