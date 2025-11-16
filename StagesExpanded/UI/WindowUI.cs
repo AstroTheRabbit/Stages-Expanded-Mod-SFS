@@ -92,6 +92,7 @@ namespace StagesExpanded.UI
             {
                 pool.Enqueue(new StageUI(window, scroll));
             }
+            scroll.Move(Vector2.zero);
 
             pool.First().Update(currentStageState, info.CurrentStageResult);
             foreach ((int id, PhaseResult result, StageUI ui) in pool.Skip(1).Zip(rocket.staging.stages, (u, s) => (s.stageId, info.StageResults[s], u)))
