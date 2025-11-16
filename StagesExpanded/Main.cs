@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace StagesExpanded
 {
-    public class Main : Mod// !, IUpdatable
+    public class Main : Mod, IUpdatable
     {
         public static Main main;
         public override string ModNameID => "stagesexpanded";
@@ -22,7 +22,13 @@ namespace StagesExpanded
         public override string Description => "Displays ∆V, burn time, and other stats for your rockets' stages.";
 
         public override Dictionary<string, string> Dependencies { get; } = new Dictionary<string, string> { { "UITools", "1.1.5" } };
-        public Dictionary<string, FilePath> UpdatableFiles => new Dictionary<string, FilePath>() { { "https://github.com/AstroTheRabbit/Stages-Expanded-Mod-SFS/releases/latest/download/StagesExpanded.dll", new FolderPath(ModFolder).ExtendToFile("StagesExpanded.dll") } };
+        public Dictionary<string, FilePath> UpdatableFiles => new Dictionary<string, FilePath>()
+        {
+            {
+                "https://github.com/AstroTheRabbit/Stages-Expanded-Mod-SFS/releases/latest/download/StagesExpanded.dll",
+                new FolderPath(ModFolder).ExtendToFile("StagesExpanded.dll")
+            }
+        };
 
         public override void Early_Load()
         {
@@ -55,28 +61,6 @@ namespace StagesExpanded
                 StatsUI.Init();
                 WindowUI.Init();
                 SimulationManager.Init();
-
-                // ! TESTING ONLY
-                ModLoader.IO.Console.commands.Add
-                (
-                    (string input) =>
-                    {
-                        if (input != "calc")
-                            return false;
-                        
-                        if (PlayerController.main.player.Value is Rocket rocket)
-                        {
-                            RocketInfo info = RocketInfo.Generate(rocket);
-                            info.CurrentStageResult.DebugPrint("Current Stage");
-                            foreach (Stage stage in rocket.staging.stages)
-                            {
-                                info.StageResults[stage].DebugPrint($"Stage {stage.stageId}");
-                            }
-                        }
-
-                        return true;
-                    }
-                );
             }
 
             void Relaunch()

@@ -79,14 +79,5 @@ namespace StagesExpanded.Simulation
             if (Settings.settings.ShowReadout_InitialMass ) yield return (Name_InitialMass , InitialMass );
             if (Settings.settings.ShowReadout_FinalMass   ) yield return (Name_FinalMass   , FinalMass   );
         }
-
-        public void DebugPrint(string phaseName)
-        {
-            Console.main.WriteText(phaseName + ":");
-            foreach ((string name, double result) in Results())
-            {
-                Console.main.WriteText($"  {name}: {result}");
-            }
-        }
     }
 }

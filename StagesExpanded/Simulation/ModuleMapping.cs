@@ -11,7 +11,6 @@ namespace StagesExpanded.Simulation
         private readonly Dictionary<ResourceModule, ResourceInfo> resources = new Dictionary<ResourceModule, ResourceInfo>();
         private readonly Dictionary<EngineModule, EngineInfo> engines = new Dictionary<EngineModule, EngineInfo>();
         private readonly Dictionary<BoosterModule, EngineInfo> boosters = new Dictionary<BoosterModule, EngineInfo>();
-        // TODO: `BoosterModule` support.
 
         public ModuleMapping(Rocket rocket)
         {
