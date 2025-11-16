@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Collections.Generic;
+using SFS;
 using SFS.Parts.Modules;
-using ModLoader.IO;
 
 namespace StagesExpanded.Simulation
 {
@@ -20,6 +20,13 @@ namespace StagesExpanded.Simulation
             WetMass = rm.ResourceAmount * rm.resourceType.resourceMass;
         }
 
+        public ResourceInfo(BoosterModule bm)
+        {
+            Engines = new HashSet<EngineInfo>();
+            // ? `BoosterModule.fuelPercent.Value * BoosterModule.FuelMass`
+            WetMass = bm.fuelPercent.Value * bm.wetMass.Value * (1 - bm.dryMassPercent.Value * Base.worldBase.settings.difficulty.DryMassMultiplier);
+        }
+
         public void Step(double burnTime)
         {
             WetMass -= MassFlow * burnTime;
@@ -32,7 +39,7 @@ namespace StagesExpanded.Simulation
 
         public void UpdateMassFlow()
         {
-            MassFlow = Engines.Where(ei => ei.EngineOn).Sum(ei => ei.MassFlowPerResource(this));
+            MassFlow = Engines.Where(ei => ei.Status.Running()).Sum(ei => ei.MassFlowPerResource(this));
         }
     }
 }

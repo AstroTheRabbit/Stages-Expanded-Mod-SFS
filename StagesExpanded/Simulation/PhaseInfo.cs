@@ -35,7 +35,7 @@ namespace StagesExpanded.Simulation
             {
                 ei.UpdateEngine();
             }
-            HashSet<EngineInfo> engines = mapping.Engines.Where(ei => ei.EngineOn).ToHashSet();
+            HashSet<EngineInfo> engines = mapping.Engines.Where(ei => ei.Status.Running()).ToHashSet();
             HashSet<ResourceInfo> resources = engines.SelectMany(ei => ei.Resources).ToHashSet();
             foreach (ResourceInfo ri in resources)
             {
@@ -86,11 +86,11 @@ namespace StagesExpanded.Simulation
             }
             foreach (EngineInfo ei in stage.ToggledEngines)
             {
-                ei.EngineOn = !ei.EngineOn;
+                ei.Status = ei.Status.Toggle();
             }
             foreach (EngineInfo ei in stage.RemovedEngines)
             {
-                ei.EngineOn = false;
+                ei.Status = ei.Status.Shutdown();
             }
             return Generate(finalMass, mapping);
         }

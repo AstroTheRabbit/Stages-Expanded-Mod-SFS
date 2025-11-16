@@ -63,7 +63,7 @@ namespace StagesExpanded.UI
 
         static void UpdateUI(Rocket rocket, RocketInfo info)
         {
-            if (window == null)
+            if (window?.gameObject == null)
                 return;
 
             if (info == null || !rocket.hasControl)
@@ -98,7 +98,7 @@ namespace StagesExpanded.UI
             {
                 if (!stageStates.TryGetValue(id, out StageUI.State state))
                 {
-                    bool minimized = result.IsEmpty && Settings.settings.MinimizeEmptyStages;
+                    bool minimized = Settings.settings.MinimizeEmptyStages && result.IsEmpty;
                     state = new StageUI.State(minimized);
                     stageStates.Add(id, state);
                 }
@@ -111,6 +111,7 @@ namespace StagesExpanded.UI
             if (holder != null)
                 Object.Destroy(holder);
             ClearStates();
+            pool.Clear();
         }
 
         static void ClearStates()
@@ -208,7 +209,7 @@ namespace StagesExpanded.UI
 
         public void Update(State state, PhaseResult result, int stageId = 0)
         {
-            if (window == null)
+            if (window?.gameObject == null)
                 return;
             
             currentState = state;

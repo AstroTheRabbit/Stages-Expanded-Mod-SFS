@@ -40,11 +40,16 @@ namespace StagesExpanded.Simulation
                 stageMap.Add(stage, StageInfo.Generate(stage, ref joints, mapping));
             }
             
-            // * Initialize the simulation with the currently enabled engines.
+            // * Initialize the simulation with the currently enabled engines & boosters.
             rocket.partHolder.parts
                 .GetModules<EngineModule>()
                 .Where(em => em.engineOn.Value)
                 .Select(mapping.GetOrAddEngine)
+                .ForEach(ei => ei.UpdateEngine());
+            rocket.partHolder.parts
+                .GetModules<BoosterModule>()
+                .Where(bm => bm.enabled)
+                .Select(mapping.GetOrAddBooster)
                 .ForEach(ei => ei.UpdateEngine());
 
             Queue<Stage> stages = new Queue<Stage>(rocket.staging.stages);

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using SFS.World;
 using SFS.Parts.Modules;
+using System.Linq;
 
 namespace StagesExpanded.Simulation
 {
@@ -9,6 +10,7 @@ namespace StagesExpanded.Simulation
     {
         private readonly Dictionary<ResourceModule, ResourceInfo> resources = new Dictionary<ResourceModule, ResourceInfo>();
         private readonly Dictionary<EngineModule, EngineInfo> engines = new Dictionary<EngineModule, EngineInfo>();
+        private readonly Dictionary<BoosterModule, EngineInfo> boosters = new Dictionary<BoosterModule, EngineInfo>();
         // TODO: `BoosterModule` support.
 
         public ModuleMapping(Rocket rocket)
@@ -26,7 +28,7 @@ namespace StagesExpanded.Simulation
 
         public double Throttle { get; }
         public IEnumerable<ResourceInfo> Resources => resources.Values;
-        public IEnumerable<EngineInfo> Engines => engines.Values;
+        public IEnumerable<EngineInfo> Engines => Enumerable.Concat(engines.Values, boosters.Values);
 
         /// Adds a resource to the mapping, or returns the current one if it already exists.
         public ResourceInfo GetOrAddResource(ResourceModule rm)
@@ -46,6 +48,18 @@ namespace StagesExpanded.Simulation
             {
                 ei = new EngineInfo(em, this);
                 engines.Add(em, ei);
+            }
+            return ei;
+        }
+
+        /// Adds a booster to the mapping, or returns the current one if it already exists.
+        public EngineInfo GetOrAddBooster(BoosterModule bm)
+        {
+            if (!boosters.TryGetValue(bm, out EngineInfo ei))
+            {
+                ResourceInfo ri = new ResourceInfo(bm);
+                ei = new EngineInfo(bm, ri);
+                boosters.Add(bm, ei);
             }
             return ei;
         }

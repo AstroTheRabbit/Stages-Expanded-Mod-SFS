@@ -10,9 +10,9 @@ namespace StagesExpanded.Simulation
     /// Contains info about how the rocket changes (resources, engines, etc) when a stage is triggered.
     public class StageInfo
     {
-        public List<ResourceInfo> RemovedResources { get; private set; }
         public List<EngineInfo> RemovedEngines { get; private set; }
         public List<EngineInfo> ToggledEngines { get; private set; }
+        public List<ResourceInfo> RemovedResources { get; private set; }
         public double RemovedDryMass { get; private set; }
         public double RemovedMass => RemovedDryMass + RemovedResources.Sum(ri => ri.WetMass);
 
@@ -99,26 +99,30 @@ namespace StagesExpanded.Simulation
                 }
             }
 
-            List<ResourceInfo> removedResources = removedParts
-                .GetModules<ResourceModule>()
-                .Select(mapping.GetOrAddResource)
-                .ToList();
-            List<EngineInfo> removedEngines = removedParts
+            IEnumerable<EngineInfo> removedEngines = removedParts
                 .GetModules<EngineModule>()
-                .Select(mapping.GetOrAddEngine)
-                .ToList();
-            List<EngineInfo> toggledEngines = stage.parts
-                .Where(p => !removedParts.Contains(p))
+                .Select(mapping.GetOrAddEngine);
+            IEnumerable<EngineInfo> toggledEngines = stage.parts
                 .GetModules<EngineModule>()
-                .Select(mapping.GetOrAddEngine)
-                .ToList();
+                .Select(mapping.GetOrAddEngine);
+            IEnumerable<EngineInfo> removedBoosters = removedParts
+                .GetModules<BoosterModule>()
+                .Select(mapping.GetOrAddBooster);
+            IEnumerable<EngineInfo> toggledBoosters = stage.parts
+                .GetModules<BoosterModule>()
+                .Select(mapping.GetOrAddBooster);
+            List<ResourceInfo> removedResources = Enumerable.Concat
+            (
+                removedParts.GetModules<ResourceModule>().Select(mapping.GetOrAddResource),
+                removedBoosters.SelectMany(em => em.Resources)
+            ).ToList();
             double removedDryMass = removedParts.Sum(p => p.mass.Value) - splitMass - removedResources.Sum(ri => ri.WetMass);
             return new StageInfo()
             {
-                RemovedResources = removedResources,
-                RemovedEngines = removedEngines,
-                ToggledEngines = toggledEngines,
                 RemovedDryMass = removedDryMass,
+                RemovedResources = removedResources,
+                RemovedEngines = Enumerable.Concat(removedEngines, removedBoosters).ToList(),
+                ToggledEngines = Enumerable.Concat(toggledEngines, toggledBoosters).ToList(),
             };
         }
 
