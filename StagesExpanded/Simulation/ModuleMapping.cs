@@ -12,14 +12,12 @@ namespace StagesExpanded.Simulation
         private readonly Dictionary<EngineModule, EngineInfo> engines = new Dictionary<EngineModule, EngineInfo>();
         private readonly Dictionary<BoosterModule, EngineInfo> boosters = new Dictionary<BoosterModule, EngineInfo>();
 
-        public ModuleMapping(Rocket rocket)
+        public ModuleMapping(SimulationInput input, out JointGroup joints)
         {
-            if (rocket.throttle.throttlePercent.Value > 0.001)
-                Throttle = rocket.throttle.throttlePercent.Value;
-            else
-                Throttle = 1;
-            
-            foreach (ResourceModule rm in rocket.partHolder.GetModules<ResourceModule>())
+            Throttle = input.GetThrottle();
+            joints = input.GetJointGroup();
+
+            foreach (ResourceModule rm in joints.parts.GetModules<ResourceModule>())
             {
                 GetOrAddResource(rm);
             }

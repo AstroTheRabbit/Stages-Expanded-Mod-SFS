@@ -1,10 +1,10 @@
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using HarmonyLib;
 using SFS.World;
+using SFS.Builds;
+using StagesExpanded.Simulation;
 using SFS.Parts.Modules;
-using System.Collections;
+using UnityEngine.SceneManagement;
 
 namespace StagesExpanded.Patches
 {
@@ -16,16 +16,24 @@ namespace StagesExpanded.Patches
         public static void RemoveJoint(this JointGroup instance, PartJoint joint) => throw new Exception("Reverse Patch Error");
     }
 
-    /// Reverse patch & extension for use in `RocketInfo.Create(Rocket)`.
-    [HarmonyPatch(typeof(DetachModule), "GetJointsToDetach")]
-    public static class DetachModule_GetJointsToDetach
+    [HarmonyPatch(typeof(BuildState), nameof(BuildState.Clear))]
+    public static class BuildState_Clear
     {
-        // * `GetJointsToDetach()` returns a `List<DetachModule.DetachData>`, however `DetachModule.DetachData` is a private struct.
-        // * Instead, we wrap the reverse patch in a second method which returns the `joint` from each `DetachData`.
-        [HarmonyReversePatch]
-        static object GetJointsToDetach(this DetachModule instance) => throw new Exception("Reverse Patch Error");
-        public static IEnumerable<PartJoint> GetJoints(this DetachModule instance) => ((IEnumerable) GetJointsToDetach(instance))
-            .Cast<object>()
-            .Select(o => new Traverse(o).Field<PartJoint>("joint").Value);
+        public static void Postfix()
+        {
+            // * Used to determine whether or not the window UI should be "reset".
+            BuildInput.GridCleared = true;
+        }
+    }
+
+    [HarmonyPatch(typeof(RcsModule), "FixedUpdate")]
+    public static class RcsModule_FixedUpdate
+    {
+        public static bool Prefix()
+        {
+            // * `RcsModule.FixedUpdate` tries to access `RcsModule.Rocket` in the build scene
+            // * since Stages Expanded generates `FlowModule` flows for use in the simulation.
+            return SceneManager.GetActiveScene().name != "Build_PC";
+        }
     }
 }

@@ -1,27 +1,39 @@
 using System;
 using System.Threading;
-using ModLoader.Helpers;
+using UnityEngine;
 using SFS.Input;
 using SFS.World;
-using UnityEngine;
+using ModLoader.Helpers;
 
 namespace StagesExpanded.Simulation
 {
     public static class SimulationManager
     {
-        private static Rocket rocket = null;
+        private static SimulationInput simulationInput = null;
         private static Thread simulationThread = null;
         private static bool simulationRunning = false;
         private static readonly object simulationLock = new object();
         private static readonly AutoResetEvent simulationResetEvent = new AutoResetEvent(false);
         private static SynchronizationContext unityContext = null;
 
-        public static event Action<Rocket, RocketInfo> OnResultChanged;
+        public static event Action<SimulationInput, SimulationOutput> OnResultChanged;
 
         public static void Init()
         {
             unityContext = SynchronizationContext.Current;
 
+            SceneHelper.OnBuildSceneLoaded += () =>
+            {
+                lock (simulationLock)
+                {
+                    simulationInput = new BuildInput();
+                }
+                StartThread();
+            };
+            SceneHelper.OnBuildSceneUnloaded += () =>
+            {
+                StopThread();
+            };
             SceneHelper.OnWorldSceneLoaded += () =>
             {
                 PlayerController.main.player.OnChange += OnPlayerChange;
@@ -38,7 +50,10 @@ namespace StagesExpanded.Simulation
         {
             lock (simulationLock)
             {
-                rocket = player as Rocket;
+                if (player is Rocket rocket)
+                    simulationInput = new WorldInput(rocket);
+                else
+                    simulationInput = null;
             }
             simulationResetEvent.Set();
         }
@@ -64,9 +79,9 @@ namespace StagesExpanded.Simulation
             simulationThread = null;
         }
 
-        private static void PostResultChanged(Rocket rocket, RocketInfo info)
+        private static void PostResultChanged(SimulationInput input, SimulationOutput info)
         {
-            unityContext.Post(_ => OnResultChanged(rocket, info), null);
+            unityContext.Post(_ => OnResultChanged(input, info), null);
         }
 
         private static void SimulationLoop()
@@ -79,22 +94,19 @@ namespace StagesExpanded.Simulation
                 
                 try
                 {
-                    RocketInfo copy_result = null;
-                    if (!SandboxSettings.main.settings.infiniteFuel)
-                    {
-                        Rocket copy_rocket;
-                        lock (simulationLock)
-                        {
-                            copy_rocket = rocket;
-                        }
-                        if (copy_rocket != null && copy_rocket.hasControl)
-                        {
-                            copy_result = RocketInfo.Generate(copy_rocket);
-                        }
-                    }
+                    SimulationInput copy_input;
                     lock (simulationLock)
                     {
-                        PostResultChanged(rocket, copy_result);
+                        copy_input = simulationInput;
+                    }
+
+                    SimulationOutput copy_output = null;
+                    if (copy_input != null && copy_input.RunSimulation())
+                        copy_output = SimulationOutput.Generate(copy_input);
+
+                    lock (simulationLock)
+                    {
+                        PostResultChanged(copy_input, copy_output);
                     }
                 }
                 catch (Exception e)

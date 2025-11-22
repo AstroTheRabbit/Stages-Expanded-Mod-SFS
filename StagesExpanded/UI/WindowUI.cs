@@ -23,22 +23,24 @@ namespace StagesExpanded.UI
         private static ClosableWindow window;
         private static ScrollElement scroll;
 
-        private static Rocket previousRocket = null;
+        private static SimulationInput previousInput = null;
         private static readonly Queue<StageUI> pool = new Queue<StageUI>();
-        private static readonly StageUI.State currentStageState = new StageUI.State();
-        private static readonly Dictionary<int, StageUI.State> stageStates = new Dictionary<int, StageUI.State>();
+        private static readonly Dictionary<int, StageUI.State> states = new Dictionary<int, StageUI.State>();
 
         public static void Init()
         {
             SceneHelper.OnWorldSceneLoaded += CreateUI;
             SceneHelper.OnWorldSceneUnloaded += DestroyUI;
+            SceneHelper.OnBuildSceneLoaded += CreateUI;
+            SceneHelper.OnBuildSceneUnloaded += DestroyUI;
             SimulationManager.OnResultChanged += UpdateUI;
         }
 
         public static void CreateUI()
         {
             DestroyUI();
-            if (Settings.settings.ActiveReadoutCount() == 0 || SceneManager.GetActiveScene().name != "World_PC")
+            string name = SceneManager.GetActiveScene().name;
+            if (Settings.settings.ActiveReadoutCount() == 0 || name != "World_PC" && name != "Build_PC")
                 return;
             
             holder = Builder.CreateHolder(Builder.SceneToAttach.CurrentScene, "Stages Expanded - Window Holder");
@@ -61,13 +63,14 @@ namespace StagesExpanded.UI
             scroll = window.ChildrenHolder.GetComponent<ScrollElement>();
         }
 
-        static void UpdateUI(Rocket rocket, RocketInfo info)
+        static void UpdateUI(SimulationInput input, SimulationOutput output)
         {
             if (window?.gameObject == null)
                 return;
 
-            if (info == null || !rocket.hasControl)
+            if (input == null || output == null)
             {
+                ClearStates();
                 window.Active = false;
                 return;
             }
@@ -76,14 +79,14 @@ namespace StagesExpanded.UI
                 window.Active = true;
             }
 
-            if (previousRocket != rocket)
+            if (input.ResetWindowUI(previousInput))
             {
                 ClearStates();
                 scroll.ResetPosition();
-                previousRocket = rocket;
             }
+            previousInput = input;
 
-            int required = info.StageResults.Count + 1;
+            int required = output.StageResults.Count + 1;
             while (pool.Count > required)
             {
                 pool.Dequeue().Destroy();
@@ -94,14 +97,18 @@ namespace StagesExpanded.UI
             }
             scroll.Move(Vector2.zero);
 
-            pool.First().Update(currentStageState, info.CurrentStageResult);
-            foreach ((int id, PhaseResult result, StageUI ui) in pool.Skip(1).Zip(rocket.staging.stages, (u, s) => (s.stageId, info.StageResults[s], u)))
+            var iter = pool.Zip
+            (
+                output.AllResults(),
+                (ui, tuple) => (ui, tuple.id, tuple.result)
+            );
+            foreach ((StageUI ui, int id, PhaseResult result) in iter)
             {
-                if (!stageStates.TryGetValue(id, out StageUI.State state))
+                if (!states.TryGetValue(id, out StageUI.State state))
                 {
                     bool minimized = Settings.settings.MinimizeEmptyStages && result.IsEmpty;
                     state = new StageUI.State(minimized);
-                    stageStates.Add(id, state);
+                    states.Add(id, state);
                 }
                 ui.Update(state, result, id);
             }
@@ -117,8 +124,7 @@ namespace StagesExpanded.UI
 
         static void ClearStates()
         {
-            currentStageState.Minimized = false;
-            stageStates.Clear();
+            states.Clear();
         }
     }
 
@@ -208,7 +214,7 @@ namespace StagesExpanded.UI
                 Object.Destroy(window.gameObject);
         }
 
-        public void Update(State state, PhaseResult result, int stageId = 0)
+        public void Update(State state, PhaseResult result, int stageId)
         {
             if (window?.gameObject == null)
                 return;

@@ -29,7 +29,7 @@ namespace StagesExpanded.Simulation
             foreach (DetachModule dm in stage.parts.GetModules<DetachModule>())
             {
                 // ? `DetachModule.Detach()`
-                foreach (PartJoint j in dm.GetJoints())
+                foreach (PartJoint j in dm.GetJointsToDetach_Simulation(jointGroup))
                 {
                     jointGroup.RemoveJoint(j);
                 }
@@ -39,7 +39,7 @@ namespace StagesExpanded.Simulation
                 // ? `SplitModule.Split()`
                 if (sm.fairing)
                 {
-                    var list = jointGroup.GetConnectedFairings(sm.FieldRef<Part>("part"), sm);
+                    List<SplitModule> list = jointGroup.GetConnectedFairings(sm.FieldRef<Part>("part"), sm);
                     foreach (SplitModule fairing in list)
                     {
                         Deploy(fairing);

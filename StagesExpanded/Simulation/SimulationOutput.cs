@@ -5,15 +5,18 @@ using SFS.Parts.Modules;
 
 namespace StagesExpanded.Simulation
 {
-    public class RocketInfo
+    public class SimulationOutput
     {
-        /// The calculation results of the current rocket state.
-        public PhaseResult CurrentStageResult { get; } 
+        /// The staging used to generate this output.
+        public List<Stage> Stages { get; }
+        /// The combined result of every stage.
         public PhaseResult TotalResults { get; }
+        /// The calculation results of the current rocket state.
+        public PhaseResult CurrentStageResult { get; }
         /// Maps a `Stage` to its respective stage `PhaseResult`.
         public Dictionary<Stage, PhaseResult> StageResults { get; }
 
-        private RocketInfo(PhaseResult currentStageResult, Dictionary<Stage, PhaseResult> stageResults)
+        private SimulationOutput(List<Stage> stages, PhaseResult currentStageResult, Dictionary<Stage, PhaseResult> stageResults)
         {
             IEnumerable<PhaseResult> Enumerator()
             {
@@ -23,39 +26,41 @@ namespace StagesExpanded.Simulation
                     yield return pr;
                 }
             }
+            Stages = stages;
+            TotalResults = PhaseResult.Merge(Enumerator());
             CurrentStageResult = currentStageResult;
             StageResults = stageResults;
-            TotalResults = PhaseResult.Merge(Enumerator());
         }
 
-        public static RocketInfo Generate(Rocket rocket)
+        public static SimulationOutput Generate(SimulationInput input)
         {
-            ModuleMapping mapping = new ModuleMapping(rocket);
+            ModuleMapping mapping = new ModuleMapping(input, out JointGroup joints);
+            double mass = joints.parts.Sum(p => p.mass.Value);
+            List<Stage> stages = input.GetStages().Copy();
 
-            // * Generate staging info.
-            Dictionary<Stage, StageInfo> stageMap = new Dictionary<Stage, StageInfo>();
-            JointGroup joints = rocket.jointsGroup.ShallowCopy();
-            foreach (Stage stage in rocket.staging.stages)
-            {
-                stageMap.Add(stage, StageInfo.Generate(stage, ref joints, mapping));
-            }
-            
             // * Initialize the simulation with the currently enabled engines & boosters.
-            rocket.partHolder.parts
+            joints.parts
                 .GetModules<EngineModule>()
                 .Where(em => em.engineOn.Value)
                 .Select(mapping.GetOrAddEngine)
                 .ForEach(ei => ei.UpdateEngine());
-            rocket.partHolder.parts
+            joints.parts
                 .GetModules<BoosterModule>()
                 .Where(bm => bm.enabled)
                 .Select(mapping.GetOrAddBooster)
                 .ForEach(ei => ei.UpdateEngine());
 
-            Queue<Stage> stages = new Queue<Stage>(rocket.staging.stages);
+            // * Generate staging info.
+            Dictionary<Stage, StageInfo> stageMap = new Dictionary<Stage, StageInfo>();
+            foreach (Stage stage in stages)
+            {
+                stageMap.Add(stage, StageInfo.Generate(stage, ref joints, mapping));
+            }
+
+            Queue<Stage> stageQueue = new Queue<Stage>(stages);
             Stage previousStage = null;
 
-            PhaseInfo phase = PhaseInfo.Generate(rocket.mass.GetMass(), mapping);
+            PhaseInfo phase = PhaseInfo.Generate(mass, mapping);
             PhaseResult emptyResult = PhaseResult.EmptyResult(phase.TotalMass, phase.TotalMass);
             List<PhaseResult> phaseResults = new List<PhaseResult>();
 
@@ -72,14 +77,14 @@ namespace StagesExpanded.Simulation
                     stageResults.Add(previousStage, result);
             }
 
-            while (stages.TryPeek(out Stage currentStage))
+            while (stageQueue.TryPeek(out Stage currentStage))
             {
                 StageInfo currentInfo = stageMap[currentStage];
                 if (phase.ShouldApplyStage(currentInfo))
                 {
                     AddResults();
                     // * `stages.Dequeue() == currentStage`
-                    previousStage = stages.Dequeue();
+                    previousStage = stageQueue.Dequeue();
                     phase = phase.ApplyStage(currentInfo, mapping, out emptyResult);
                 }
                 else
@@ -95,7 +100,16 @@ namespace StagesExpanded.Simulation
             }
             AddResults();
 
-            return new RocketInfo(currentStageResult, stageResults);
+            return new SimulationOutput(stages, currentStageResult, stageResults);
+        }
+
+        public IEnumerable<(int id, PhaseResult result)> AllResults()
+        {
+            yield return (0, CurrentStageResult);
+            foreach (Stage stage in Stages)
+            {
+                yield return (stage.stageId, StageResults[stage]);
+            }
         }
     }
 }

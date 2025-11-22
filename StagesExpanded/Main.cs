@@ -6,8 +6,6 @@ using SFS.IO;
 using ModLoader;
 using StagesExpanded.UI;
 using StagesExpanded.Simulation;
-using SFS.World;
-using UnityEngine;
 
 namespace StagesExpanded
 {
@@ -18,7 +16,7 @@ namespace StagesExpanded
         public override string DisplayName => "Stages Expanded";
         public override string Author => "Astro The Rabbit";
         public override string MinimumGameVersionNecessary => "1.5.10.2";
-        public override string ModVersion => "1.0";
+        public override string ModVersion => "1.1";
         public override string Description => "Displays ∆V, burn time, and other stats for your rockets' stages.";
 
         public override Dictionary<string, string> Dependencies { get; } = new Dictionary<string, string> { { "UITools", "1.1.5" } };
