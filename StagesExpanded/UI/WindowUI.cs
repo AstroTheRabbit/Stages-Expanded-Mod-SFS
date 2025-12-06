@@ -4,15 +4,14 @@ using System.Collections.Generic;
 using UITools;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using SFS.UI;
-using SFS.World;
 using SFS.UI.ModGUI;
 using ModLoader.Helpers;
 using StagesExpanded.Simulation;
 using Object = UnityEngine.Object;
 using LayoutType = SFS.UI.ModGUI.Type;
 using static StagesExpanded.ReadoutNames;
-using UnityEngine.SceneManagement;
 
 namespace StagesExpanded.UI
 {
@@ -61,6 +60,9 @@ namespace StagesExpanded.UI
             window.Minimized = Settings.settings.WindowMinimized;
             window.OnMinimizedChangedEvent += () => Settings.settings.WindowMinimized = window.Minimized;
             scroll = window.ChildrenHolder.GetComponent<ScrollElement>();
+            
+            float scale = Settings.settings.WindowScale;
+            window.rectTransform.localScale = new Vector3(scale, scale, 1);
         }
 
         static void UpdateUI(SimulationInput input, SimulationOutput output)

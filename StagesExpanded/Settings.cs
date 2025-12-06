@@ -16,6 +16,7 @@ namespace StagesExpanded
         public static Settings main;
         private static FilePath settingsFile;
         protected override FilePath SettingsFile => settingsFile;
+        private static Color DefaultInputColor => new Color(0.008f, 0.090f, 0.180f, 0.941f);
 
         public static void Init(string modFolder)
         {
@@ -47,7 +48,6 @@ namespace StagesExpanded
 
             void CreateIntInput(string name, MemberRef<int> setting)
             {
-                Color defaultInputColor = new Color(0.008f, 0.090f, 0.180f, 0.941f);
                 InputWithLabel input = Builder.CreateInputWithLabel
                 (
                     box,
@@ -60,7 +60,7 @@ namespace StagesExpanded
                 {
                     if (int.TryParse(value, out int result) && result > 0)
                     {
-                        input.textInput.FieldColor = defaultInputColor;
+                        input.textInput.FieldColor = DefaultInputColor;
                         setting.Set(result);
                     }
                     else
@@ -70,26 +70,63 @@ namespace StagesExpanded
                 };
             }
 
+            void CreateFloatInput(string name, MemberRef<float> setting)
+            {
+                InputWithLabel input = Builder.CreateInputWithLabel
+                (
+                    box,
+                    size.x - 30,
+                    40,
+                    labelText: name,
+                    inputText: setting.Get().ToString()
+                );
+                input.textInput.OnChange += (string value) =>
+                {
+                    if (float.TryParse(value, out float result) && result > 0.01)
+                    {
+                        input.textInput.FieldColor = DefaultInputColor;
+                        setting.Set(result);
+                    }
+                    else
+                    {
+                        input.textInput.FieldColor = Color.red;
+                    }
+                };
+            }
+
+            void CreateToggle(string name, MemberRef<bool> setting)
+            {
+                Builder.CreateToggleWithLabel
+                (
+                    box,
+                    size.x - 30,
+                    40,
+                    () => setting.Get(),
+                    () => setting.Set(!setting.Get()),
+                    labelText: name
+                );
+            }
 
             MemberRef<int> windowWidthRef = MemberRef<int>.FromProperty(settings, nameof(SettingsData.WindowWidth), WindowUI.CreateUI);
             MemberRef<int> windowHeightRef = MemberRef<int>.FromProperty(settings, nameof(SettingsData.WindowHeight), WindowUI.CreateUI);
+            MemberRef<float> windowScaleRef = MemberRef<float>.FromProperty(settings, nameof(SettingsData.WindowScale), WindowUI.CreateUI);
             MemberRef<int> simulationFrequencyRef = MemberRef<int>.FromProperty(settings, nameof(SettingsData.SimulationFrequency));
             MemberRef<bool> minimizeEmptyStagesRef = MemberRef<bool>.FromProperty(settings, nameof(SettingsData.MinimizeEmptyStages), WindowUI.CreateUI);
+            MemberRef<bool> statsCurrentRef = MemberRef<bool>.FromProperty(settings, nameof(SettingsData.ShowStat_Current));
+            MemberRef<bool> statsTotalRef = MemberRef<bool>.FromProperty(settings, nameof(SettingsData.ShowStat_Total));
 
             CreateIntInput("Window Width", windowWidthRef);
             CreateIntInput("Window Height", windowHeightRef);
+            CreateFloatInput("Window Scale", windowScaleRef);
             CreateIntInput("Simulation Frequency", simulationFrequencyRef);
 
-            Builder.CreateToggleWithLabel
-            (
-                box,
-                size.x - 30,
-                40,
-                () => minimizeEmptyStagesRef.Get(),
-                () => minimizeEmptyStagesRef.Set(!minimizeEmptyStagesRef.Get()),
-                labelText: "Minimize Empty Stages"
-            );
+            CreateToggle("Minimize Empty Stages", minimizeEmptyStagesRef);
 
+            Builder.CreateSeparator(box, size.x - 30);
+            Builder.CreateLabel(box, size.x - 30, 40, text: "Stats Options");
+            CreateToggle("Show Current ∆V", statsCurrentRef);
+            CreateToggle("Show Total ∆V", statsTotalRef);
+            
             return box.gameObject;
         }
 
@@ -125,7 +162,11 @@ namespace StagesExpanded
     {
         public int WindowWidth { get; set; } = 320;
         public int WindowHeight { get; set; } = 620;
+        public float WindowScale { get; set; } = 1;
         public bool WindowMinimized { get; set; } = false;
+
+        public bool ShowStat_Current { get; set; } = false;
+        public bool ShowStat_Total { get; set; } = true;
 
         /// How often the simulation run, in milliseconds.
         public int SimulationFrequency { get; set; } = 1000;

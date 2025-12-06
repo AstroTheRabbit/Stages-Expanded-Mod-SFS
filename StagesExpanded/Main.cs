@@ -16,9 +16,10 @@ namespace StagesExpanded
         public override string DisplayName => "Stages Expanded";
         public override string Author => "Astro The Rabbit";
         public override string MinimumGameVersionNecessary => "1.5.10.2";
-        public override string ModVersion => "1.1";
+        public override string ModVersion => "1.2";
         public override string Description => "Displays ∆V, burn time, and other stats for your rockets' stages.";
 
+        public static bool DeltaVCalculatorActive { get; private set; }
         public override Dictionary<string, string> Dependencies { get; } = new Dictionary<string, string> { { "UITools", "1.1.5" } };
         public Dictionary<string, FilePath> UpdatableFiles => new Dictionary<string, FilePath>()
         {
@@ -36,37 +37,11 @@ namespace StagesExpanded
 
         public override void Load()
         {
-            const string ID_DELTA_V_CALCULATOR = "DELTA_V_CALCULATOR";
-            string Text_Menu()
-            {
-                return "Stages Expanded completely replaces the functionality of Altaïr's ΔV calculator.\n"
-                     + "Stages Expanded will now disable ∆V calculator and relaunch the game.\n"
-                     + "You can also fully uninstall ∆V calculator if you want.";
-            }
-            string Text_Continue()
-            {
-                return "Continue";
-            }
-
-            if (ModsSettings.main.settings.modsActive.TryGetValue(ID_DELTA_V_CALCULATOR, out bool active) && active)
-            {
-                ButtonBuilder button = ButtonBuilder.CreateButton(null, Text_Continue, Relaunch, SFS.Input.CloseMode.None);
-                MenuGenerator.ShowChoices(Text_Menu, button);
-            }
-            else
-            {
-                Settings.Init(ModFolder);
-                StatsUI.Init();
-                WindowUI.Init();
-                SimulationManager.Init();
-            }
-
-            void Relaunch()
-            {
-                ModsSettings.main.settings.modsActive[ID_DELTA_V_CALCULATOR] = false;
-                ModsSettings.main.SaveAll();
-                ApplicationUtility.Relaunch();
-            }
+            DeltaVCalculatorActive = ModsSettings.main.settings.modsActive.TryGetValue("DELTA_V_CALCULATOR", out bool active) && active;
+            Settings.Init(ModFolder);
+            StatsUI.Init();
+            WindowUI.Init();
+            SimulationManager.Init();
         }
     }
 }
