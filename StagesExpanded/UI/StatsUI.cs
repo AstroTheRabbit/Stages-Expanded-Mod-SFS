@@ -5,6 +5,7 @@ using SFS.UI;
 using SFS.World;
 using SFS.Translations;
 using StagesExpanded.Simulation;
+using UnityEngine.SceneManagement;
 
 namespace StagesExpanded.UI
 {
@@ -66,8 +67,14 @@ namespace StagesExpanded.UI
             if (holder_stats?.gameObject == null)
                 return;
 
-            bool show_current = Settings.settings.ShowStat_Current && !Main.DeltaVCalculatorActive;
+            bool show_current = Settings.settings.ShowStat_Current;
             bool show_total = Settings.settings.ShowStat_Total;
+
+            if (Main.DeltaVCalculatorActive)
+            {
+                // * If "∆V calculator" is installed & active, only show Stages Expanded's "Current ∆V" stat in the build scene.
+                show_current &= SceneManager.GetActiveScene().name == "Build_PC";
+            }
 
             separator_current.SetActive(show_current);
             holder_current.SetActive(show_current);
