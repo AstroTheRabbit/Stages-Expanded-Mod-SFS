@@ -55,7 +55,7 @@ namespace StagesExpanded.UI
             );
             window.CreateLayoutGroup(LayoutType.Vertical, spacing: 5);
             window.EnableScrolling(LayoutType.Vertical);
-            window.RegisterPermanentSaving($"{Main.main.ModNameID}-{name}");
+            window.RegisterPermanentSaving($"{Main.main.ModNameID}.{name}");
 
             window.Minimized = Settings.settings.WindowMinimized;
             window.OnMinimizedChangedEvent += () => Settings.settings.WindowMinimized = window.Minimized;
