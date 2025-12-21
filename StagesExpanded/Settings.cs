@@ -14,14 +14,12 @@ namespace StagesExpanded
     public class Settings : ModSettings<SettingsData>
     {
         public static Settings main;
-        private static FilePath settingsFile;
-        protected override FilePath SettingsFile => settingsFile;
+        protected override FilePath SettingsFile => new FolderPath(Main.main.ModFolder).ExtendToFile("settings.txt");
         private static Color DefaultInputColor => new Color(0.008f, 0.090f, 0.180f, 0.941f);
 
-        public static void Init(string modFolder)
+        public static void Init()
         {
             main = new Settings();
-            settingsFile = new FolderPath(modFolder).ExtendToFile("settings.txt");
             main.Initialize();
             main.AddUI();
         }

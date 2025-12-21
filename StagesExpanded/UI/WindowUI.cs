@@ -55,7 +55,7 @@ namespace StagesExpanded.UI
             );
             window.CreateLayoutGroup(LayoutType.Vertical, spacing: 5);
             window.EnableScrolling(LayoutType.Vertical);
-            window.RegisterPermanentSaving(Main.main.ModNameID);
+            window.RegisterPermanentSaving($"{Main.main.ModNameID}-{name}");
 
             window.Minimized = Settings.settings.WindowMinimized;
             window.OnMinimizedChangedEvent += () => Settings.settings.WindowMinimized = window.Minimized;
@@ -65,7 +65,7 @@ namespace StagesExpanded.UI
             window.rectTransform.localScale = new Vector3(scale, scale, 1);
         }
 
-        static void UpdateUI(SimulationInput input, SimulationOutput output)
+        private static void UpdateUI(SimulationInput input, SimulationOutput output)
         {
             if (window?.gameObject == null)
                 return;
@@ -99,12 +99,12 @@ namespace StagesExpanded.UI
             }
             scroll.Move(Vector2.zero);
 
-            var iter = pool.Zip
+            IEnumerable<(StageUI, int, PhaseResult)> iterator = pool.Zip
             (
                 output.AllResults(),
                 (ui, tuple) => (ui, tuple.id, tuple.result)
             );
-            foreach ((StageUI ui, int id, PhaseResult result) in iter)
+            foreach ((StageUI ui, int id, PhaseResult result) in iterator)
             {
                 if (!states.TryGetValue(id, out StageUI.State state))
                 {
@@ -141,7 +141,7 @@ namespace StagesExpanded.UI
             }
         }
 
-        private readonly ClosableWindow window;
+        internal readonly ClosableWindow window = null;
         private readonly Label label_DeltaV = null;
         private readonly Label label_BurnTime = null;
         private readonly Label label_Thrust = null;

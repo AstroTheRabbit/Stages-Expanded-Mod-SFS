@@ -36,7 +36,7 @@ namespace StagesExpanded.Simulation
         {
             ModuleMapping mapping = new ModuleMapping(input, out JointGroup joints);
             double mass = joints.parts.Sum(p => p.mass.Value);
-            List<Stage> stages = input.GetStages().Copy();
+            List<Stage> stages = input.GetStages(joints);
 
             // * Initialize the simulation with the currently enabled engines & boosters.
             joints.parts

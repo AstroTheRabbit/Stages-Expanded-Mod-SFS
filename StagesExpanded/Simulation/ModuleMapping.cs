@@ -15,7 +15,7 @@ namespace StagesExpanded.Simulation
         public ModuleMapping(SimulationInput input, out JointGroup joints)
         {
             Throttle = input.GetThrottle();
-            joints = input.GetJointGroup();
+            joints = input.GetJointGroup(true);
 
             foreach (ResourceModule rm in joints.parts.GetModules<ResourceModule>())
             {

@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System.Linq;
+using System.Collections.Generic;
 using HarmonyLib;
 using UITools;
-using SFS.UI;
 using SFS.IO;
 using ModLoader;
 using StagesExpanded.UI;
@@ -37,8 +37,8 @@ namespace StagesExpanded
 
         public override void Load()
         {
-            DeltaVCalculatorActive = ModsSettings.main.settings.modsActive.TryGetValue("DELTA_V_CALCULATOR", out bool active) && active;
-            Settings.Init(ModFolder);
+            DeltaVCalculatorActive = Loader.main.GetLoadedMods().Any(m => m.ModNameID == "DELTA_V_CALCULATOR");
+            Settings.Init();
             StatsUI.Init();
             WindowUI.Init();
             SimulationManager.Init();
