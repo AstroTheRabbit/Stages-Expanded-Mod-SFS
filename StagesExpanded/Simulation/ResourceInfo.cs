@@ -8,7 +8,7 @@ namespace StagesExpanded.Simulation
     public class ResourceInfo
     {
         /// Set of engines currently using this `ResourceInfo`.
-        public HashSet<EngineInfo> Engines { get; private set; }
+        public HashSet<EngineInfo> Engines { get; }
         public double WetMass { get; private set; }
         public double MassFlow { get; private set; }
         public double BurnTime => WetMass / MassFlow;

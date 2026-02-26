@@ -18,16 +18,11 @@ namespace StagesExpanded.Simulation
 
         private SimulationOutput(List<Stage> stages, PhaseResult currentStageResult, Dictionary<Stage, PhaseResult> stageResults)
         {
-            IEnumerable<PhaseResult> Enumerator()
-            {
-                yield return currentStageResult;
-                foreach (PhaseResult pr in stageResults.Values)
-                {
-                    yield return pr;
-                }
-            }
+            List<PhaseResult> phases = new List<PhaseResult> { currentStageResult };
+            phases.AddRange(stageResults.Values);
+            
             Stages = stages;
-            TotalResults = PhaseResult.Merge(Enumerator());
+            TotalResults = PhaseResult.Merge(phases);
             CurrentStageResult = currentStageResult;
             StageResults = stageResults;
         }
@@ -51,11 +46,7 @@ namespace StagesExpanded.Simulation
                 .ForEach(ei => ei.UpdateEngine());
 
             // * Generate staging info.
-            Dictionary<Stage, StageInfo> stageMap = new Dictionary<Stage, StageInfo>();
-            foreach (Stage stage in stages)
-            {
-                stageMap.Add(stage, StageInfo.Generate(stage, ref joints, mapping));
-            }
+            Dictionary<Stage, StageInfo> stageMap = stages.ToDictionary(stage => stage, stage => StageInfo.Generate(stage, ref joints, mapping));
 
             Queue<Stage> stageQueue = new Queue<Stage>(stages);
             Stage previousStage = null;

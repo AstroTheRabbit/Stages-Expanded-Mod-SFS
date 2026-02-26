@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UITools;
 using SFS.IO;
@@ -8,23 +9,24 @@ using SFS.UI.ModGUI;
 using StagesExpanded.UI;
 using LayoutType = SFS.UI.ModGUI.Type;
 using static StagesExpanded.ReadoutNames;
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 
 namespace StagesExpanded
 {
     public class Settings : ModSettings<SettingsData>
     {
         public static Settings main;
-        protected override FilePath SettingsFile => new FolderPath(Main.main.ModFolder).ExtendToFile("settings.txt");
+        protected override FilePath SettingsFile => new FolderPath(Entrypoint.Main.ModFolder).ExtendToFile("settings.txt");
         private static Color DefaultInputColor => new Color(0.008f, 0.090f, 0.180f, 0.941f);
 
         public static void Init()
         {
             main = new Settings();
             main.Initialize();
-            main.AddUI();
+            AddUI();
         }
 
-        void AddUI()
+        private static void AddUI()
         {
             ConfigurationMenu.Add
             (
@@ -38,7 +40,7 @@ namespace StagesExpanded
             );
         }
 
-        GameObject CreateGeneralUI(Transform parent)
+        private static GameObject CreateGeneralUI(Transform parent)
         {
             Vector2Int size = ConfigurationMenu.ContentSize;
             Box box = Builder.CreateBox(parent, size.x, size.y);
@@ -54,7 +56,7 @@ namespace StagesExpanded
                     labelText: name,
                     inputText: setting.Get().ToString()
                 );
-                input.textInput.OnChange += (string value) =>
+                input.textInput.OnChange += value =>
                 {
                     if (int.TryParse(value, out int result) && result > 0)
                     {
@@ -76,9 +78,9 @@ namespace StagesExpanded
                     size.x - 30,
                     40,
                     labelText: name,
-                    inputText: setting.Get().ToString()
+                    inputText: setting.Get().ToString(CultureInfo.InvariantCulture)
                 );
-                input.textInput.OnChange += (string value) =>
+                input.textInput.OnChange += value =>
                 {
                     if (float.TryParse(value, out float result) && result > 0.01)
                     {
@@ -99,7 +101,7 @@ namespace StagesExpanded
                     box,
                     size.x - 30,
                     40,
-                    () => setting.Get(),
+                    setting.Get,
                     () => setting.Set(!setting.Get()),
                     labelText: name
                 );
@@ -128,7 +130,7 @@ namespace StagesExpanded
             return box.gameObject;
         }
 
-        GameObject CreateReadoutsUI(Transform parent)
+        private static GameObject CreateReadoutsUI(Transform parent)
         {
             Vector2Int size = ConfigurationMenu.ContentSize;
             Box box = Builder.CreateBox(parent, size.x, size.y);

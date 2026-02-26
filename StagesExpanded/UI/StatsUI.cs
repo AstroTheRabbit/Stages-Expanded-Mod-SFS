@@ -70,7 +70,7 @@ namespace StagesExpanded.UI
             bool show_current = Settings.settings.ShowStat_Current;
             bool show_total = Settings.settings.ShowStat_Total;
 
-            if (Main.DeltaVCalculatorActive)
+            if (Entrypoint.DeltaVCalculatorActive)
             {
                 // * If "∆V calculator" is installed & active, only show Stages Expanded's "Current ∆V" stat in the build scene.
                 show_current &= SceneManager.GetActiveScene().name == "Build_PC";

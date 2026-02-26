@@ -11,7 +11,7 @@ namespace StagesExpanded.Simulation
         private HashSet<EngineInfo> Engines { get; set; }
         private HashSet<ResourceInfo> Resources { get; set; }
         public double TotalMass { get; private set; }
-        public double FinalMass => TotalMass - (MassFlow * BurnTime);
+        public double FinalMass => TotalMass - MassFlow * BurnTime;
 
         /// The total thrust caused by this phase's engines.
         public Double2 Thrust => Engines.Select(ei => ei.Thrust).Sum();
@@ -41,7 +41,7 @@ namespace StagesExpanded.Simulation
             {
                 ri.UpdateMassFlow();
             }
-            return new PhaseInfo()
+            return new PhaseInfo
             {
                 Engines = engines,
                 Resources = resources,

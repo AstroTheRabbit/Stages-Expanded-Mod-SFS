@@ -55,7 +55,7 @@ namespace StagesExpanded.UI
             );
             window.CreateLayoutGroup(LayoutType.Vertical, spacing: 5);
             window.EnableScrolling(LayoutType.Vertical);
-            window.RegisterPermanentSaving($"{Main.main.ModNameID}.{name}");
+            window.RegisterPermanentSaving($"{Entrypoint.Main.ModNameID}.{name}");
 
             window.Minimized = Settings.settings.WindowMinimized;
             window.OnMinimizedChangedEvent += () => Settings.settings.WindowMinimized = window.Minimized;
@@ -124,7 +124,7 @@ namespace StagesExpanded.UI
             pool.Clear();
         }
 
-        static void ClearStates()
+        private static void ClearStates()
         {
             states.Clear();
         }
@@ -154,12 +154,12 @@ namespace StagesExpanded.UI
 
         public StageUI(Window holder, ScrollElement scroll)
         {
-            int label_spacing = 5;
-            int window_padding = 5;
-            int window_width = Settings.settings.WindowWidth - (2 * window_padding);
-            int label_height = 30;
-            int label_width = window_width - (2 * window_padding);
-            int window_height = (label_height + label_spacing) * Settings.settings.ActiveReadoutCount() + label_spacing + (2 * window_padding) + 50;
+            const int labelSpacing = 5;
+            const int windowPadding = 5;
+            int window_width = Settings.settings.WindowWidth - 2 * windowPadding;
+            const int labelHeight = 30;
+            int label_width = window_width - 2 * windowPadding;
+            int window_height = (labelHeight + labelSpacing) * Settings.settings.ActiveReadoutCount() + labelSpacing + 2 * windowPadding + 50;
 
             window = UIToolsBuilder.CreateClosableWindow
             (
@@ -175,7 +175,7 @@ namespace StagesExpanded.UI
                 LayoutType.Vertical,
                 TextAnchor.MiddleLeft,
                 5,
-                new RectOffset(window_padding, window_padding, window_padding, window_padding)
+                new RectOffset(windowPadding, windowPadding, windowPadding, windowPadding)
             );
 
             // * Stops the inner window from "intercepting" scroll inputs which should be going to the main outer window.
@@ -192,13 +192,13 @@ namespace StagesExpanded.UI
 
             foreach ((_, MemberRef<Label> labelRef) in Labels())
             {
-                Label label = Builder.CreateLabel(window, label_width, label_height);
+                Label label = Builder.CreateLabel(window, label_width, labelHeight);
                 label.TextAlignment = TMPro.TextAlignmentOptions.TopLeft;
                 labelRef.Set(label);
             }
         }
 
-        IEnumerable<(string name, MemberRef<Label> label)> Labels()
+        private IEnumerable<(string name, MemberRef<Label> label)> Labels()
         {
             if (Settings.settings.ShowReadout_DeltaV      ) yield return (Name_DeltaV      , MemberRef<Label>.FromField(this, nameof(label_DeltaV      )));
             if (Settings.settings.ShowReadout_BurnTime    ) yield return (Name_BurnTime    , MemberRef<Label>.FromField(this, nameof(label_BurnTime    )));
@@ -222,16 +222,11 @@ namespace StagesExpanded.UI
                 return;
             
             currentState = state;
-            var iter = Enumerable.Zip
+            IEnumerable<(Label, string name, double result)> iter = Labels()
+            .Zip
             (
-                Labels(),
                 result.Results(),
-                (l, r) =>
-                {
-                    if (l.name != r.name)
-                        throw new Exception($"Stages Expanded - Label name '{l.name}' does not match readout name '{r.name}'!");
-                    return (l.label.Get(), l.name, r.result);
-                }
+                (l, r) => l.name == r.name ? (l.label.Get(), l.name, r.result) : throw new Exception($"Stages Expanded - Label name '{l.name}' does not match readout name '{r.name}'!")
             );
             foreach ((Label label, string name, double value) in iter)
             {

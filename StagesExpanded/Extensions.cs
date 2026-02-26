@@ -86,7 +86,7 @@ namespace StagesExpanded
         public static IEnumerable<PartJoint> GetJointsToDetach_Simulation(this DetachModule module, JointGroup joints)
         {
             Part part = module.transform.GetComponentInParentTree<Part>();
-            Line2[] surfaces = module.separationSurface.surfaces.SelectMany((Surfaces x) => x.GetSurfacesWorld()).ToArray();
+            Line2[] surfaces = module.separationSurface.surfaces.SelectMany(x => x.GetSurfacesWorld()).ToArray();
             foreach (PartJoint connectedJoint in joints.GetConnectedJoints(part))
             {
                 Line2[] otherSurfaces = connectedJoint.GetOtherPart(part).GetAttachmentSurfacesWorld();
@@ -101,65 +101,70 @@ namespace StagesExpanded
                         }
                     }
                 }
-                SurfacesConnect: continue;
+                SurfacesConnect: ;
             }
         }
 
         /// ? Simulation-friendly version of `FlowModule.Flow.GetSources`.
         public static ResourceModule[] GetSources_Simulation(this FlowModule.Flow flow, JointGroup joints, Part part)
         {
-            if (flow.sourceSearchMode == FlowModule.SourceMode.Global)
+            switch (flow.sourceSearchMode)
             {
-                // * `FlowModule.Flow.GetGlobally` uses the rocket's `Resources.globalGroups`,
-                // * however the code below has the same effect in the simulation.
-                return joints.parts
-                    .GetModules<ResourceModule>()
-                    .Where(rm => flow.resourceType == rm.resourceType)
-                    .ToArray();
-            }
-            if (flow.sourceSearchMode == FlowModule.SourceMode.Surfaces)
-            {
-                List<ResourceModule> result = new List<ResourceModule>();
-                HashSet<Part> checkedParts = new HashSet<Part>();
-                Stack<Part> connectedParts = new Stack<Part>
-                (
-                    joints
-                        .GetConnectedJoints(part)
-                        .Select(pj => pj.GetOtherPart(part))
-                        .Where(p => SurfaceUtility.SurfacesConnect(p, flow.surface, out _, out _))
-                );
-                while (connectedParts.TryPop(out part))
+                case FlowModule.SourceMode.Global:
                 {
-                    if (checkedParts.Contains(part))
-                        continue;
-                    checkedParts.Add(part);
-                    
-                    bool foundResource = false;
-                    foreach (ResourceModule rm in part.GetModules<ResourceModule>())
-                    {
-                        if (rm.resourceType == flow.resourceType)
-                        {
-                            result.Add(rm);
-                            foundResource = true;
-                        }
-                    }
-                    if (foundResource)
-                    {
-                        foreach (PartJoint joint in joints.GetConnectedJoints(part))
-                        {
-                            connectedParts.Push(joint.GetOtherPart(part));
-                        }
-                    }
+                    // * `FlowModule.Flow.GetGlobally` uses the rocket's `Resources.globalGroups`,
+                    // * however the code below has the same effect in the simulation.
+                    return joints.parts
+                        .GetModules<ResourceModule>()
+                        .Where(rm => flow.resourceType == rm.resourceType)
+                        .ToArray();
                 }
-                return result.ToArray();
+                case FlowModule.SourceMode.Surfaces:
+                {
+                    List<ResourceModule> result = new List<ResourceModule>();
+                    HashSet<Part> checkedParts = new HashSet<Part>();
+                    Stack<Part> connectedParts = new Stack<Part>
+                    (
+                        joints
+                            .GetConnectedJoints(part)
+                            .Select(pj => pj.GetOtherPart(part))
+                            .Where(p => SurfaceUtility.SurfacesConnect(p, flow.surface, out _, out _))
+                    );
+                    while (connectedParts.TryPop(out part))
+                    {
+                        if (!checkedParts.Add(part))
+                            continue;
+
+                        bool foundResource = false;
+                        foreach (ResourceModule rm in part.GetModules<ResourceModule>())
+                        {
+                            if (rm.resourceType == flow.resourceType)
+                            {
+                                result.Add(rm);
+                                foundResource = true;
+                            }
+                        }
+                        if (foundResource)
+                        {
+                            foreach (PartJoint joint in joints.GetConnectedJoints(part))
+                            {
+                                connectedParts.Push(joint.GetOtherPart(part));
+                            }
+                        }
+                    }
+                    return result.ToArray();
+                }
+                case FlowModule.SourceMode.Local:
+                {
+                    return new Traverse(flow)
+                        .Method("GetLocally")
+                        .GetValue<ResourceModule[]>(part);
+                }
+                default:
+                {
+                    throw new Exception("Stages Expanded - Invalid `Flow.sourceSearchMode`!");
+                }
             }
-            if (flow.sourceSearchMode == FlowModule.SourceMode.Local)
-            {
-                return new Traverse(flow)
-                    .Method("GetLocally")
-                    .GetValue<ResourceModule[]>(part);
-            }
-            throw new Exception("Stages Expanded - Invalid `Flow.sourceSearchMode`!");
         }
     }
 }

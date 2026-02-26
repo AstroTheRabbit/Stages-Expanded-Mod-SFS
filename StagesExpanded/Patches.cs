@@ -6,6 +6,8 @@ using StagesExpanded.Simulation;
 using SFS.Parts.Modules;
 using UnityEngine.SceneManagement;
 
+// ReSharper disable once CheckNamespace
+
 namespace StagesExpanded.Patches
 {
     /// Reverse patch & extension for use in `RocketInfo.Create(Rocket)`.
@@ -21,7 +23,7 @@ namespace StagesExpanded.Patches
     {
         public static void Postfix()
         {
-            // * Used to determine whether or not the window UI should be "reset".
+            // * Used to determine whether the window UI should be "reset".
             BuildInput.GridCleared = true;
         }
     }

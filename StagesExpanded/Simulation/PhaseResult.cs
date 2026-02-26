@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Collections.Generic;
 using static StagesExpanded.ReadoutNames;
-using ModLoader.IO;
 
 namespace StagesExpanded.Simulation
 {
@@ -21,7 +20,7 @@ namespace StagesExpanded.Simulation
 
         public static PhaseResult EmptyResult(double initialMass, double finalMass)
         {
-            return new PhaseResult()
+            return new PhaseResult
             {
                 Thrust = 0,
                 Acceleration = 0,
@@ -36,7 +35,7 @@ namespace StagesExpanded.Simulation
         public static PhaseResult FromPhaseInfo(PhaseInfo pi)
         {
             double thrust = pi.Thrust.magnitude;
-            return new PhaseResult()
+            return new PhaseResult
             {
                 Thrust = thrust,
                 Acceleration = 9.8 * thrust / pi.TotalMass,
@@ -49,23 +48,24 @@ namespace StagesExpanded.Simulation
         }
 
         /// Combines the results of `phases` into a single stage `PhaseResult`. Returns `null` if `phases` is empty.
-        public static PhaseResult Merge(IEnumerable<PhaseResult> phases)
+        public static PhaseResult Merge(List<PhaseResult> phases)
         {
-            if (phases.Count() == 0)
-                return null;
-            
-            PhaseResult first = phases.First();
-            PhaseResult last = phases.Last();
-            return new PhaseResult()
+            if (phases.Any())
             {
-                Thrust = first.Thrust,
-                Acceleration = first.Acceleration,
-                Isp = first.Isp,
-                BurnTime = phases.Sum(pr => pr.BurnTime),
-                DeltaV = phases.Sum(pr => pr.DeltaV),
-                InitialMass = first.InitialMass,
-                FinalMass = last.FinalMass,
-            };
+                PhaseResult first = phases.First();
+                PhaseResult last = phases.Last();
+                return new PhaseResult
+                {
+                    Thrust = first.Thrust,
+                    Acceleration = first.Acceleration,
+                    Isp = first.Isp,
+                    BurnTime = phases.Sum(pr => pr.BurnTime),
+                    DeltaV = phases.Sum(pr => pr.DeltaV),
+                    InitialMass = first.InitialMass,
+                    FinalMass = last.FinalMass,
+                };
+            }
+            return null;
         }
 
         public IEnumerable<(string name, double result)> Results()

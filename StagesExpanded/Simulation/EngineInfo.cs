@@ -19,10 +19,7 @@ namespace StagesExpanded.Simulation
     {
         public static EngineStatus GetStatus(this EngineModule em)
         {
-            if (em.engineOn.Value)
-                return EngineStatus.EngineOn;
-            else
-                return EngineStatus.EngineOff;
+            return em.engineOn.Value ? EngineStatus.EngineOn : EngineStatus.EngineOff;
         }
 
         public static EngineStatus GetStatus(this BoosterModule bm)
@@ -38,17 +35,11 @@ namespace StagesExpanded.Simulation
             switch (status)
             {
                 case EngineStatus.EngineOn:
-                    if (resourcesAvailable)
-                        return EngineStatus.EngineOn;
-                    else
-                        return EngineStatus.EngineOff;
+                    return resourcesAvailable ? EngineStatus.EngineOn : EngineStatus.EngineOff;
                 case EngineStatus.EngineOff:
                         return EngineStatus.EngineOff;
                 case EngineStatus.BoosterOn:
-                    if (resourcesAvailable)
-                        return EngineStatus.BoosterOn;
-                    else
-                        return EngineStatus.BoosterOff;
+                    return resourcesAvailable ? EngineStatus.BoosterOn : EngineStatus.BoosterOff;
                 case EngineStatus.BoosterOff:
                     return EngineStatus.BoosterOff;
                 default:
@@ -145,7 +136,7 @@ namespace StagesExpanded.Simulation
             Thrust = GetThrust(booster);
             MassFlow = GetMassFlow(booster);
             Status = booster.GetStatus();
-            Resources = new HashSet<ResourceInfo>() { resource };
+            Resources = new HashSet<ResourceInfo> { resource };
             resource.Engines.Add(this);
         }
 
@@ -178,7 +169,7 @@ namespace StagesExpanded.Simulation
             // * The differing (incorrect) calculation for thrust here may seem strange,
             // * but it's actually a bug with the way SFS calculates mass flow!
             double thrust = em.thrust.Value * em.transform.TransformVector(em.thrustNormal.Value).magnitude;
-            double isp = (double) em.ISP.Value * Base.worldBase.settings.difficulty.IspMultiplier;
+            double isp = em.ISP.Value * Base.worldBase.settings.difficulty.IspMultiplier;
             return thrust / isp;
         }
 

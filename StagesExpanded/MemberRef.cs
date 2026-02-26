@@ -50,7 +50,7 @@ namespace StagesExpanded
             return new MemberRef<T>
             (
                 () => (T) info.GetValue(owner),
-                (T value) => info.SetValue(owner, value),
+                value => info.SetValue(owner, value),
                 onChange
             );
         }
@@ -71,7 +71,7 @@ namespace StagesExpanded
             return new MemberRef<T>
             (
                 () => (T) info.GetValue(owner),
-                (T value) => info.SetValue(owner, value),
+                value => info.SetValue(owner, value),
                 onChange
             );
         }

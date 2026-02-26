@@ -69,7 +69,7 @@ namespace StagesExpanded.Simulation
                             if (splitModuleJoints.TryGetValue(other, out List<Part> parts))
                                 parts.Add(part);
                             else
-                                splitModuleJoints.Add(other, new List<Part>() { part });
+                                splitModuleJoints.Add(other, new List<Part> { part });
                         }
                         jointGroup.RemoveJoint(joint);
                     }
@@ -99,30 +99,40 @@ namespace StagesExpanded.Simulation
                 }
             }
 
-            IEnumerable<EngineInfo> removedEngines = removedParts
+            EngineInfo[] removedEngines = removedParts
                 .GetModules<EngineModule>()
-                .Select(mapping.GetOrAddEngine);
-            IEnumerable<EngineInfo> toggledEngines = stage.parts
+                .Select(mapping.GetOrAddEngine)
+                .ToArray();
+            EngineInfo[] toggledEngines = stage.parts
                 .GetModules<EngineModule>()
-                .Select(mapping.GetOrAddEngine);
-            IEnumerable<EngineInfo> removedBoosters = removedParts
+                .Select(mapping.GetOrAddEngine)
+                .ToArray();
+            
+            EngineInfo[] removedBoosters = removedParts
                 .GetModules<BoosterModule>()
-                .Select(mapping.GetOrAddBooster);
-            IEnumerable<EngineInfo> toggledBoosters = stage.parts
+                .Select(mapping.GetOrAddBooster)
+                .ToArray();
+            EngineInfo[] toggledBoosters = stage.parts
                 .GetModules<BoosterModule>()
-                .Select(mapping.GetOrAddBooster);
-            List<ResourceInfo> removedResources = Enumerable.Concat
-            (
-                removedParts.GetModules<ResourceModule>().Select(mapping.GetOrAddResource),
-                removedBoosters.SelectMany(em => em.Resources)
-            ).ToList();
-            double removedDryMass = removedParts.Sum(p => p.mass.Value) - splitMass - removedResources.Sum(ri => ri.WetMass);
-            return new StageInfo()
+                .Select(mapping.GetOrAddBooster)
+                .ToArray();
+            
+            List<ResourceInfo> removedResources = removedParts
+                .GetModules<ResourceModule>()
+                .Select(mapping.GetOrAddResource)
+                .Concat(removedBoosters.SelectMany(em => em.Resources))
+                .ToList();
+            
+            double removedDryMass = removedParts
+                .Sum(p => p.mass.Value) - splitMass - removedResources
+                .Sum(ri => ri.WetMass);
+            
+            return new StageInfo
             {
                 RemovedDryMass = removedDryMass,
                 RemovedResources = removedResources,
-                RemovedEngines = Enumerable.Concat(removedEngines, removedBoosters).ToList(),
-                ToggledEngines = Enumerable.Concat(toggledEngines, toggledBoosters).ToList(),
+                RemovedEngines = removedEngines.Concat(removedBoosters).ToList(),
+                ToggledEngines = toggledEngines.Concat(toggledBoosters).ToList(),
             };
         }
 
@@ -143,7 +153,7 @@ namespace StagesExpanded.Simulation
                     resources.Clear();
                     foreach (ResourceModule rm in group.parts.GetModules<ResourceModule>())
                     {
-                        if (resources.TryGetValue(rm.resourceType, out var tuple))
+                        if (resources.TryGetValue(rm.resourceType, out (double amount, double capacity) tuple))
                             resources[rm.resourceType] = (tuple.amount + rm.ResourceAmount, tuple.capacity + rm.TotalResourceCapacity);
                         else
                             resources.Add(rm.resourceType, (rm.ResourceAmount, rm.TotalResourceCapacity));

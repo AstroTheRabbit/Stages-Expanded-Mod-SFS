@@ -25,7 +25,7 @@ namespace StagesExpanded.Simulation
 
         public double Throttle { get; }
         public IEnumerable<ResourceInfo> Resources => resources.Values;
-        public IEnumerable<EngineInfo> Engines => Enumerable.Concat(engines.Values, boosters.Values);
+        public IEnumerable<EngineInfo> Engines => engines.Values.Concat(boosters.Values);
 
         /// Adds a resource to the mapping, or returns the current one if it already exists.
         public ResourceInfo GetOrAddResource(ResourceModule rm)

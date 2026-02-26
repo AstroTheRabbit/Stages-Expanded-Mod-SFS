@@ -32,7 +32,6 @@ namespace StagesExpanded
                 case Name_Isp:
                     return result + value.ToString(1, false) + "s";
                 case Name_InitialMass:
-                    return result + value.ToMassString(2);
                 case Name_FinalMass:
                     return result + value.ToMassString(2);
                 default:
@@ -40,7 +39,7 @@ namespace StagesExpanded
             }
         }
 
-        static string ToBurnTimeString(this double value)
+        private static string ToBurnTimeString(this double value)
         {
             TimeSpan span = TimeSpan.FromSeconds(value);
             string result = "";
@@ -57,7 +56,7 @@ namespace StagesExpanded
             return result;
         }
 
-        static string ToMassString(this double value, int decimals)
+        private static string ToMassString(this double value, int decimals)
         {
             return value.ToString(decimals, true) + Loc.main.Mass_Unit;
         }

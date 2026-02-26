@@ -30,10 +30,7 @@ namespace StagesExpanded.Simulation
                 }
                 StartThread();
             };
-            SceneHelper.OnBuildSceneUnloaded += () =>
-            {
-                StopThread();
-            };
+            SceneHelper.OnBuildSceneUnloaded += StopThread;
             SceneHelper.OnWorldSceneLoaded += () =>
             {
                 PlayerController.main.player.OnChange += OnPlayerChange;
@@ -81,7 +78,7 @@ namespace StagesExpanded.Simulation
 
         private static void PostResultChanged(SimulationInput input, SimulationOutput info)
         {
-            unityContext.Post(_ => OnResultChanged(input, info), null);
+            unityContext.Post(_ => OnResultChanged?.Invoke(input, info), null);
         }
 
         private static void SimulationLoop()

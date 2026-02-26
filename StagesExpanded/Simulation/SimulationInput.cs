@@ -4,7 +4,6 @@ using SFS.Parts;
 using SFS.World;
 using SFS.Builds;
 using SFS.Parts.Modules;
-using HarmonyLib;
 
 namespace StagesExpanded.Simulation
 {
@@ -19,7 +18,7 @@ namespace StagesExpanded.Simulation
 
     public class WorldInput : SimulationInput
     {
-        public Rocket Rocket { get; private set; }
+        public Rocket Rocket { get; }
 
         public WorldInput(Rocket rocket)
         {
@@ -58,17 +57,13 @@ namespace StagesExpanded.Simulation
 
         public override bool ResetWindowUI(SimulationInput previousInput)
         {
-            if (previousInput is WorldInput input && Rocket == input.Rocket)
-            {
-                return false;
-            }
-            return true;
+            return !(previousInput is WorldInput input) || Rocket != input.Rocket;
         }
     }
 
     public class BuildInput : SimulationInput
     {
-        private PartHolder PartHolder => BuildManager.main.buildGrid.activeGrid.partsHolder;
+        private static PartHolder PartHolder => BuildManager.main.buildGrid.activeGrid.partsHolder;
         // * Set by the `BuildState_Clear` patch.
         public static bool GridCleared { get; set; }
 
